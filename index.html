@@ -16,28 +16,26 @@
 </head>
 <body>
     <!-- ============================================================ -->
-    <!-- ACTIVATION SCREEN (TOKEN) -->
+    <!-- PANTALLA DE AUTENTICACIÓN CON GOOGLE -->
     <!-- ============================================================ -->
-    <div id="activation-screen" class="fullscreen-overlay">
+    <div id="auth-screen" class="fullscreen-overlay">
         <div class="activation-card">
             <img src="logo.PNG" alt="StylishQR Logo" class="activation-logo">
             <h1 class="activation-title">StylishQR</h1>
             <p class="activation-subtitle">Genera códigos QR con estilo, logos y colores</p>
 
-            <div class="activation-input-group">
-                <label for="token-input" class="activation-label">Token de activación</label>
-                <input type="text" id="token-input" class="token-input" placeholder="Ingresa tu token" maxlength="60" autocomplete="off">
-                <button id="btn-activate-token" class="main-btn">Activar aplicación 🔓</button>
-            </div>
+            <button id="google-login-btn" class="main-btn google-btn">
+                🚀 Iniciar sesión con Google
+            </button>
 
-            <div id="token-error" class="token-error" role="alert"></div>
+            <div id="auth-error" class="token-error" role="alert"></div>
 
-            <p class="activation-note">¿No tienes token? Solicítalo al administrador o escanea el QR de activación.</p>
+            <p class="activation-note">Solo usuarios autorizados pueden acceder a la aplicación.</p>
         </div>
     </div>
 
     <!-- ============================================================ -->
-    <!-- MAIN APP -->
+    <!-- APP PRINCIPAL -->
     <!-- ============================================================ -->
     <div id="main-app" class="app-container" style="display:none;">
         <!-- Header -->
@@ -64,7 +62,6 @@
                     <button class="tab-btn" data-tab="evento">Evento</button>
                     <button class="tab-btn" data-tab="ubicacion">Ubicación</button>
                     <button class="tab-btn" data-tab="vcard">Contacto</button>
-                    <button class="tab-btn" data-tab="token">Token QR</button>
                 </div>
 
                 <div id="form-container" class="form-container">
@@ -125,9 +122,10 @@
     <!-- ============================================================ -->
     <!-- SCRIPTS -->
     <!-- ============================================================ -->
-    <!-- Firebase SDK -->
+    <!-- Firebase SDK (App, Firestore y Auth) -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 
     <!-- Librería QRCode Styling -->
     <script src="https://unpkg.com/qr-code-styling@1.6.0/lib/qr-code-styling.js"></script>
