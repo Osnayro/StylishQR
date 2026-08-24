@@ -54,11 +54,11 @@ function mostrarErrorAuth(mensaje) {
 }
 
 function verificarSesion() {
-    if (window.auth && window.auth.currentUser) {
-        verificarAutorizacion(window.auth.currentUser);
-    } else {
-        mostrarAuth(true);
-    }
+    // onAuthStateChanged siempre se dispara al cargar (con el usuario o con
+    // null), así que es la única fuente de verdad; evitamos duplicar lógica
+    // consultando window.auth.currentUser antes de que Firebase resuelva el
+    // estado (esa comprobación casi siempre sería prematura).
+    mostrarAuth(true);
 
     window.auth?.onAuthStateChanged((user) => {
         if (user) {
@@ -78,9 +78,28 @@ async function iniciarSesionGoogle() {
 
     const provider = new firebase.auth.GoogleAuthProvider();
     try {
+        // signInWithPopup falla con frecuencia en Safari iOS y en
+        // navegadores "in-app" (Instagram, Facebook, etc.). Si el popup no
+        // puede abrirse, recurrimos a signInWithRedirect como respaldo.
         const resultado = await window.auth.signInWithPopup(provider);
         await verificarAutorizacion(resultado.user);
     } catch (error) {
+        const erroresDePopup = [
+            'auth/popup-blocked',
+            'auth/popup-closed-by-user',
+            'auth/cancelled-popup-request',
+            'auth/operation-not-supported-in-this-environment'
+        ];
+        if (erroresDePopup.includes(error.code)) {
+            try {
+                await window.auth.signInWithRedirect(provider);
+                return; // La página se recargará tras el redirect.
+            } catch (errorRedirect) {
+                console.error('Error en autenticación con Google (redirect):', errorRedirect);
+                mostrarErrorAuth('No se pudo completar el inicio de sesión.');
+                return;
+            }
+        }
         console.error('Error en autenticación con Google:', error);
         mostrarErrorAuth('No se pudo completar el inicio de sesión.');
     }
@@ -158,7 +177,9 @@ function actualizarVistaPrevia(data) {
             imageSize: size
         };
     } else {
-        opciones.image = '';
+        // La librería qr-code-styling no siempre limpia la imagen con una
+        // cadena vacía; 'undefined' elimina realmente el logo anterior.
+        opciones.image = undefined;
     }
 
     qrCode.update(opciones);
@@ -186,16 +207,22 @@ function calcularCRC16EMV(datos) {
 }
 
 function generarEMVPagoMovil(f) {
-    const nombre = f.nombre || 'Comercio';
+    const nombre = (f.nombre || 'Comercio').trim();
     const tipoDoc = f.tipoDoc || 'V';
-    const numeroDoc = f.documento || '';
-    const telefono = f.telefono || '';
-    const banco = f.banco || 'Otro';
+    // Solo dígitos: evita romper el TLV si el usuario escribe espacios,
+    // guiones o puntos en la cédula/RIF o el teléfono.
+    const numeroDoc = (f.documento || '').replace(/\D/g, '');
+    const telefono = (f.telefono || '').replace(/\D/g, '');
     const monto = f.monto || '';
-    const ciudad = f.ciudad || 'Caracas';
-    const concepto = f.concepto || '';
+    const ciudad = (f.ciudad || 'Caracas').trim();
+    const concepto = (f.concepto || '').trim();
     const guid = f.guid || 've.pagomovil.generico';
     const metodo = f.metodo || '12';
+
+    // Documento y teléfono son obligatorios para un QR de pago móvil válido.
+    if (!numeroDoc || !telefono) {
+        return '';
+    }
 
     const documentoId = `${tipoDoc}${numeroDoc}`;
 
@@ -211,8 +238,10 @@ function generarEMVPagoMovil(f) {
     payload += construirTLV('52', '0000');
     payload += construirTLV('53', '924');
     if (monto) {
-        const montoFormateado = parseFloat(monto).toFixed(2);
-        payload += construirTLV('54', montoFormateado);
+        const montoNum = parseFloat(monto);
+        if (!Number.isNaN(montoNum) && montoNum > 0) {
+            payload += construirTLV('54', montoNum.toFixed(2));
+        }
     }
     payload += construirTLV('58', 'VE');
     payload += construirTLV('59', nombre);
@@ -230,6 +259,21 @@ function generarEMVPagoMovil(f) {
     return payload;
 }
 
+// Escapa los caracteres reservados del formato WIFI: (RFC del QR de Wi-Fi):
+// \  ;  ,  :  deben precederse de una barra invertida.
+function escaparValorWifi(valor) {
+    return String(valor).replace(/([\\;,:])/g, '\\$1');
+}
+
+// Convierte el valor de un <input type="datetime-local"> (p. ej.
+// "2026-08-24T10:00") al formato DTSTART de iCalendar ("20260824T100000").
+function formatearFechaICS(fechaLocal) {
+    if (!fechaLocal) return '';
+    const limpio = fechaLocal.replace(/[-:]/g, '');
+    // "20260824T1000" -> añade segundos si faltan.
+    return limpio.length === 13 ? `${limpio}00` : limpio;
+}
+
 function generarDataQR(tipo) {
     const formulario = {};
     const inputs = elementos.formContainer.querySelectorAll('[data-campo]');
@@ -242,30 +286,35 @@ function generarDataQR(tipo) {
         case 'url': return formulario.url || '';
         case 'pagomovil': return generarEMVPagoMovil(formulario);
         case 'wifi': {
-            const ssid = formulario.ssid || '';
-            const password = formulario.password || '';
+            if (!formulario.ssid) return '';
+            const ssid = escaparValorWifi(formulario.ssid);
+            const password = escaparValorWifi(formulario.password || '');
             const security = formulario.security || 'WPA';
             return `WIFI:T:${security};S:${ssid};P:${password};;`;
         }
         case 'email': {
             const email = formulario.email || '';
+            if (!email) return '';
             const asunto = formulario.asunto ? `?subject=${encodeURIComponent(formulario.asunto)}` : '';
-            const cuerpo = formulario.cuerpo ? `&body=${encodeURIComponent(formulario.cuerpo)}` : '';
+            const cuerpo = formulario.cuerpo ? `${asunto ? '&' : '?'}body=${encodeURIComponent(formulario.cuerpo)}` : '';
             return `mailto:${email}${asunto}${cuerpo}`;
         }
-        case 'telefono': return `tel:${formulario.telefono || ''}`;
+        case 'telefono': return formulario.telefono ? `tel:${formulario.telefono}` : '';
         case 'evento': {
+            if (!formulario.titulo && !formulario.fecha) return '';
             const titulo = formulario.titulo || 'Evento';
-            const fecha = formulario.fecha || '';
-            return `BEGIN:VEVENT\nSUMMARY:${titulo}\nDTSTART:${fecha}\nEND:VEVENT`;
+            const dtstart = formatearFechaICS(formulario.fecha);
+            return `BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nSUMMARY:${titulo}\nDTSTART:${dtstart}\nEND:VEVENT\nEND:VCALENDAR`;
         }
         case 'ubicacion': {
             const lat = formulario.lat || '';
             const lng = formulario.lng || '';
             const query = formulario.query || '';
-            return `geo:${lat},${lng}?q=${encodeURIComponent(query)}`;
+            if (!lat || !lng) return '';
+            return `geo:${lat},${lng}?q=${encodeURIComponent(query || `${lat},${lng}`)}`;
         }
         case 'vcard': {
+            if (!formulario.nombre && !formulario.telefono && !formulario.email) return '';
             const nombre = formulario.nombre || '';
             const empresa = formulario.empresa || '';
             const telefono = formulario.telefono || '';
@@ -296,7 +345,7 @@ function renderizarFormulario(tipo) {
                         <option value="E">Extranjero (E)</option>
                     </select>
                 </div>
-                <div class="form-group"><label>Número de documento (Cédula/RIF)</label><input type="text" data-campo="documento" placeholder="12345678"></div>
+                <div class="form-group"><label>Número de documento (Cédula/RIF)</label><input type="text" inputmode="numeric" data-campo="documento" placeholder="12345678"></div>
                 <div class="form-group"><label>Teléfono</label><input type="tel" data-campo="telefono" placeholder="04121234567"></div>
                 <div class="form-group"><label>Banco</label>
                     <select data-campo="banco">
@@ -308,7 +357,7 @@ function renderizarFormulario(tipo) {
                         <option>Otro</option>
                     </select>
                 </div>
-                <div class="form-group"><label>Monto (opcional)</label><input type="number" step="0.01" data-campo="monto" placeholder="0.00"></div>
+                <div class="form-group"><label>Monto (opcional)</label><input type="number" step="0.01" min="0" data-campo="monto" placeholder="0.00"></div>
                 <div class="form-group"><label>Concepto (opcional)</label><input type="text" data-campo="concepto" placeholder="Pago de..."></div>
                 <div class="form-group"><label>Ciudad</label><input type="text" data-campo="ciudad" placeholder="Caracas"></div>
                 <div class="form-group"><label>GUID del proveedor</label><input type="text" data-campo="guid" placeholder="ve.pagomovil.generico"></div>
@@ -345,8 +394,8 @@ function renderizarFormulario(tipo) {
             break;
         case 'ubicacion':
             html = `
-                <div class="form-group"><label>Latitud</label><input type="text" data-campo="lat" placeholder="10.4806"></div>
-                <div class="form-group"><label>Longitud</label><input type="text" data-campo="lng" placeholder="-66.9036"></div>
+                <div class="form-group"><label>Latitud</label><input type="text" inputmode="decimal" data-campo="lat" placeholder="10.4806"></div>
+                <div class="form-group"><label>Longitud</label><input type="text" inputmode="decimal" data-campo="lng" placeholder="-66.9036"></div>
                 <div class="form-group"><label>Lugar (opcional)</label><input type="text" data-campo="query" placeholder="Caracas"></div>
             `;
             break;
@@ -397,10 +446,20 @@ function configurarEventos() {
     elementos.logoUpload.addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (!file) return;
+
+        if (!file.type.startsWith('image/')) {
+            alert('Selecciona un archivo de imagen válido.');
+            elementos.logoUpload.value = '';
+            return;
+        }
+
         const reader = new FileReader();
         reader.onload = (ev) => {
             logoDataUrl = ev.target.result;
             actualizarQRDesdeFormulario();
+        };
+        reader.onerror = () => {
+            alert('No se pudo leer la imagen del logo.');
         };
         reader.readAsDataURL(file);
     });
