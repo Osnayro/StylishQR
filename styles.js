@@ -1,4 +1,3 @@
-
 :root {
     --azul-oscuro: #1E3A63;
     --azul-primario: #2563EB;
@@ -189,6 +188,9 @@ body {
     padding: 8px;
     border-radius: 12px;
     transition: background 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    color: var(--gris-texto);
 }
 
 .header-logout:hover {
@@ -382,6 +384,21 @@ textarea {
     box-shadow: none;
 }
 
+/* Botón "Iniciar sesión con Google": blanco con borde, como pide la guía
+   de marca de Google (evita imitar su gradiente azul propio). */
+.google-btn {
+    background: var(--blanco);
+    color: var(--gris-texto);
+    border: 2px solid var(--gris-borde);
+    box-shadow: none;
+}
+
+.google-btn:hover {
+    border-color: var(--azul-primario);
+    box-shadow: 0 4px 14px rgba(37,99,235,0.15);
+    transform: translateY(-1px);
+}
+
 .secondary-btn {
     width: 100%;
     margin-top: 8px;
@@ -403,7 +420,8 @@ textarea {
 /* ============================================================
    SECCIÓN ADMINISTRADOR
    ============================================================ */
-#admin-section {
+#admin-section,
+#admin-panel {
     background: #F5F3FF;
     border-radius: 18px;
     padding: 20px;
@@ -411,7 +429,8 @@ textarea {
     border: 1px solid #C4B5FD;
 }
 
-#admin-section h2 {
+#admin-section h2,
+#admin-panel h2 {
     font-size: 1.1rem;
     color: var(--morado-oscuro);
     margin-bottom: 14px;
@@ -463,6 +482,59 @@ textarea {
     display: flex;
     justify-content: center;
     margin-top: 10px;
+}
+
+/* Lista de usuarios del panel de administración */
+.admin-users-list {
+    margin: 16px 0;
+}
+
+.admin-user-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.admin-user-list li {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    background: var(--blanco);
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
+    padding: 10px 14px;
+    font-size: 0.85rem;
+}
+
+.admin-user-list li span:first-child {
+    flex: 1 1 auto;
+    font-weight: 600;
+    word-break: break-all;
+}
+
+.admin-user-list li button {
+    width: auto;
+    margin-top: 0;
+    padding: 6px 12px;
+    font-size: 0.78rem;
+    border-radius: 10px;
+    border: 2px solid var(--gris-borde);
+    background: var(--blanco);
+    cursor: pointer;
+    font-weight: 700;
+    transition: all 0.2s ease;
+}
+
+.admin-user-list li .btn-toggle-user:hover {
+    border-color: var(--verde);
+    color: var(--verde-oscuro);
+}
+
+.admin-user-list li .btn-delete-user:hover {
+    border-color: var(--rojo);
+    color: var(--rojo);
 }
 
 .app-footer {
