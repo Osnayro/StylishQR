@@ -18,29 +18,35 @@ const elementos = {
 // ==================== INICIALIZACIÓN ====================
 document.addEventListener('DOMContentLoaded', () => {
     configurarEventos();
+
+    // Habilitar botón de login solo cuando admin.js esté listo
+    elementos.btnLogin.disabled = false;
 });
 
 // ==================== EVENTOS ====================
 function configurarEventos() {
-    elementos.btnLogin.addEventListener('click', () => {
-        const pin = elementos.pinInput.value.trim();
-        if (pin === ADMIN_PIN) {
-            elementos.panel.style.display = 'block';
-            elementos.pinInput.value = '';
-            elementos.pinInput.blur();
-        } else {
-            alert('PIN de administrador incorrecto.');
-        }
-    });
-
+    elementos.btnLogin.addEventListener('click', verificarPin);
     elementos.pinInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
             e.preventDefault();
-            elementos.btnLogin.click();
+            verificarPin();
         }
     });
 
     elementos.btnGenerar.addEventListener('click', generarToken);
+}
+
+// ==================== VERIFICAR PIN ====================
+function verificarPin() {
+    const pin = elementos.pinInput.value.trim();
+
+    if (pin === ADMIN_PIN) {
+        elementos.panel.style.display = 'block';
+        elementos.pinInput.value = '';
+        elementos.pinInput.blur();
+    } else {
+        alert('PIN de administrador incorrecto.');
+    }
 }
 
 // ==================== GENERACIÓN DE TOKEN ====================
