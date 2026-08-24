@@ -16,8 +16,8 @@ const firebaseConfig = {
     measurementId: "G-ZCP4Y11HQX"
 };
 
-let db = null;
-let isFirebaseInitialized = false;
+window.db = null;
+window.isFirebaseInitialized = false;
 
 try {
     if (typeof firebase !== 'undefined') {
@@ -25,18 +25,9 @@ try {
             firebase.initializeApp(firebaseConfig);
         }
 
-        db = firebase.firestore();
+        window.db = firebase.firestore();
+        window.isFirebaseInitialized = true;
 
-        // Persistencia offline para que la PWA funcione sin conexión después del primer acceso
-        db.enablePersistence({ synchronizeTabs: true }).catch((err) => {
-            if (err.code === 'failed-precondition') {
-                console.warn('Persistencia Firestore: Múltiples pestañas abiertas.');
-            } else if (err.code === 'unimplemented') {
-                console.warn('Persistencia Firestore no soportada en este navegador.');
-            }
-        });
-
-        isFirebaseInitialized = true;
         console.log('🔥 Firebase inicializado correctamente en StylishQR');
     } else {
         console.warn('⚠️ SDK de Firebase no detectado. StylishQR no podrá validar tokens.');
