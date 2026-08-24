@@ -1,12 +1,11 @@
 
 /**
  * StylishQR — Generador de códigos QR con estilo
- * Lógica de activación, generación y personalización (usuarios finales)
+ * Autenticación con Google + lista blanca de usuarios autorizados
  * Incluye estándar EMV QRCPS para Pago Móvil Venezuela
- * Soporta cédula o RIF, teléfono, banco, monto y concepto opcionales
  */
 
-let tokenActivo = false;
+let usuarioActual = null;
 let qrCode = null;
 let logoDataUrl = null;
 
@@ -14,25 +13,16 @@ const elementos = {};
 
 document.addEventListener('DOMContentLoaded', () => {
     referenciarElementos();
-
-    if (localStorage.getItem('stylishqr_activated') === 'true') {
-        tokenActivo = true;
-        mostrarApp(true);
-    } else {
-        mostrarApp(false);
-    }
-
     inicializarQR();
     configurarEventos();
-    renderizarFormulario('text');
+    verificarSesion();
 });
 
 function referenciarElementos() {
-    elementos.activationScreen = document.getElementById('activation-screen');
+    elementos.authScreen = document.getElementById('auth-screen');
     elementos.mainApp = document.getElementById('main-app');
-    elementos.tokenInput = document.getElementById('token-input');
-    elementos.btnActivate = document.getElementById('btn-activate-token');
-    elementos.tokenError = document.getElementById('token-error');
+    elementos.googleLoginBtn = document.getElementById('google-login-btn');
+    elementos.authError = document.getElementById('auth-error');
 
     elementos.tabs = document.querySelectorAll('.tab-btn');
     elementos.formContainer = document.getElementById('form-container');
@@ -49,72 +39,85 @@ function referenciarElementos() {
     elementos.btnLogout = document.getElementById('btn-logout');
 }
 
-async function activarConToken(token) {
-    if (!firebase || !db) {
-        mostrarErrorToken('Base de datos no disponible. Contacte al administrador.');
-        return false;
+function mostrarAuth(mostrar) {
+    if (mostrar) {
+        elementos.authScreen.style.display = 'flex';
+        elementos.mainApp.style.display = 'none';
+    } else {
+        elementos.authScreen.style.display = 'none';
+        elementos.mainApp.style.display = 'block';
+    }
+}
+
+function mostrarErrorAuth(mensaje) {
+    elementos.authError.textContent = mensaje;
+}
+
+function verificarSesion() {
+    if (window.auth && window.auth.currentUser) {
+        verificarAutorizacion(window.auth.currentUser);
+    } else {
+        mostrarAuth(true);
+    }
+
+    window.auth?.onAuthStateChanged((user) => {
+        if (user) {
+            verificarAutorizacion(user);
+        } else {
+            usuarioActual = null;
+            mostrarAuth(true);
+        }
+    });
+}
+
+async function iniciarSesionGoogle() {
+    if (!window.auth) {
+        mostrarErrorAuth('Firebase Auth no está disponible.');
+        return;
+    }
+
+    const provider = new firebase.auth.GoogleAuthProvider();
+    try {
+        const resultado = await window.auth.signInWithPopup(provider);
+        await verificarAutorizacion(resultado.user);
+    } catch (error) {
+        console.error('Error en autenticación con Google:', error);
+        mostrarErrorAuth('No se pudo completar el inicio de sesión.');
+    }
+}
+
+async function verificarAutorizacion(user) {
+    if (!window.db) {
+        mostrarErrorAuth('Base de datos no disponible.');
+        return;
     }
 
     try {
-        const tokensRef = db.collection('tokens');
-        const querySnapshot = await tokensRef.where('token', '==', token.trim()).limit(1).get();
+        const docRef = window.db.collection('usuarios').doc(user.email.toLowerCase());
+        const doc = await docRef.get();
 
-        if (querySnapshot.empty) {
-            mostrarErrorToken('Token inválido.');
-            return false;
+        if (doc.exists && doc.data().activo === true) {
+            usuarioActual = user;
+            mostrarErrorAuth('');
+            mostrarAuth(false);
+            renderizarFormulario('text');
+        } else {
+            await window.auth.signOut();
+            mostrarAuth(true);
+            mostrarErrorAuth('Tu correo no está autorizado para usar StylishQR.');
         }
-
-        let tokenDoc = null;
-        let tokenData = null;
-        querySnapshot.forEach(doc => {
-            tokenDoc = doc;
-            tokenData = doc.data();
-        });
-
-        const ahora = firebase.firestore.Timestamp.now();
-        const expirado = tokenData.expiresAt && tokenData.expiresAt.toMillis() < ahora.toMillis();
-
-        if (!tokenData.activo || tokenData.usado || expirado) {
-            mostrarErrorToken('Token expirado o ya utilizado.');
-            return false;
-        }
-
-        await tokenDoc.ref.update({
-            usado: true,
-            usadoEn: firebase.firestore.FieldValue.serverTimestamp()
-        });
-
-        localStorage.setItem('stylishqr_activated', 'true');
-        tokenActivo = true;
-        mostrarApp(true);
-        mostrarErrorToken('');
-        return true;
     } catch (error) {
-        console.error('Error validando token:', error);
-        mostrarErrorToken('No se pudo validar el token. Intente nuevamente.');
-        return false;
+        console.error('Error verificando autorización:', error);
+        mostrarErrorAuth('No se pudo verificar tu acceso.');
     }
 }
 
-function mostrarErrorToken(mensaje) {
-    elementos.tokenError.textContent = mensaje;
-}
-
-function mostrarApp(mostrar) {
-    if (mostrar) {
-        elementos.activationScreen.style.display = 'none';
-        elementos.mainApp.style.display = 'block';
-    } else {
-        elementos.activationScreen.style.display = 'flex';
-        elementos.mainApp.style.display = 'none';
+async function cerrarSesion() {
+    if (window.auth) {
+        await window.auth.signOut();
     }
-}
-
-function cerrarSesion() {
-    localStorage.removeItem('stylishqr_activated');
-    tokenActivo = false;
-    mostrarApp(false);
-    elementos.tokenInput.value = '';
+    usuarioActual = null;
+    mostrarAuth(true);
 }
 
 function inicializarQR() {
@@ -235,45 +238,33 @@ function generarDataQR(tipo) {
     });
 
     switch (tipo) {
-        case 'text':
-            return formulario.texto || '';
-
-        case 'url':
-            return formulario.url || '';
-
-        case 'pagomovil':
-            return generarEMVPagoMovil(formulario);
-
+        case 'text': return formulario.texto || '';
+        case 'url': return formulario.url || '';
+        case 'pagomovil': return generarEMVPagoMovil(formulario);
         case 'wifi': {
             const ssid = formulario.ssid || '';
             const password = formulario.password || '';
             const security = formulario.security || 'WPA';
             return `WIFI:T:${security};S:${ssid};P:${password};;`;
         }
-
         case 'email': {
             const email = formulario.email || '';
             const asunto = formulario.asunto ? `?subject=${encodeURIComponent(formulario.asunto)}` : '';
             const cuerpo = formulario.cuerpo ? `&body=${encodeURIComponent(formulario.cuerpo)}` : '';
             return `mailto:${email}${asunto}${cuerpo}`;
         }
-
-        case 'telefono':
-            return `tel:${formulario.telefono || ''}`;
-
+        case 'telefono': return `tel:${formulario.telefono || ''}`;
         case 'evento': {
             const titulo = formulario.titulo || 'Evento';
             const fecha = formulario.fecha || '';
             return `BEGIN:VEVENT\nSUMMARY:${titulo}\nDTSTART:${fecha}\nEND:VEVENT`;
         }
-
         case 'ubicacion': {
             const lat = formulario.lat || '';
             const lng = formulario.lng || '';
             const query = formulario.query || '';
             return `geo:${lat},${lng}?q=${encodeURIComponent(query)}`;
         }
-
         case 'vcard': {
             const nombre = formulario.nombre || '';
             const empresa = formulario.empresa || '';
@@ -281,12 +272,7 @@ function generarDataQR(tipo) {
             const email = formulario.email || '';
             return `BEGIN:VCARD\nVERSION:3.0\nN:${nombre}\nORG:${empresa}\nTEL:${telefono}\nEMAIL:${email}\nEND:VCARD`;
         }
-
-        case 'token':
-            return formulario.token || '';
-
-        default:
-            return '';
+        default: return '';
     }
 }
 
@@ -297,11 +283,9 @@ function renderizarFormulario(tipo) {
         case 'text':
             html = `<div class="form-group"><label>Texto</label><textarea data-campo="texto" placeholder="Escribe el texto..."></textarea></div>`;
             break;
-
         case 'url':
             html = `<div class="form-group"><label>URL</label><input type="url" data-campo="url" placeholder="https://ejemplo.com"></div>`;
             break;
-
         case 'pagomovil':
             html = `
                 <div class="form-group"><label>Tipo de documento</label>
@@ -336,7 +320,6 @@ function renderizarFormulario(tipo) {
                 </div>
             `;
             break;
-
         case 'wifi':
             html = `
                 <div class="form-group"><label>Nombre de red (SSID)</label><input type="text" data-campo="ssid" placeholder="MiRedWiFi"></div>
@@ -344,7 +327,6 @@ function renderizarFormulario(tipo) {
                 <div class="form-group"><label>Seguridad</label><select data-campo="security"><option>WPA</option><option>WEP</option><option>nopass</option></select></div>
             `;
             break;
-
         case 'email':
             html = `
                 <div class="form-group"><label>Correo</label><input type="email" data-campo="email" placeholder="correo@dominio.com"></div>
@@ -352,18 +334,15 @@ function renderizarFormulario(tipo) {
                 <div class="form-group"><label>Mensaje</label><textarea data-campo="cuerpo" placeholder="Escribe el mensaje..."></textarea></div>
             `;
             break;
-
         case 'telefono':
             html = `<div class="form-group"><label>Número de teléfono</label><input type="tel" data-campo="telefono" placeholder="+58 412 1234567"></div>`;
             break;
-
         case 'evento':
             html = `
                 <div class="form-group"><label>Título del evento</label><input type="text" data-campo="titulo" placeholder="Reunión"></div>
                 <div class="form-group"><label>Fecha de inicio</label><input type="datetime-local" data-campo="fecha"></div>
             `;
             break;
-
         case 'ubicacion':
             html = `
                 <div class="form-group"><label>Latitud</label><input type="text" data-campo="lat" placeholder="10.4806"></div>
@@ -371,7 +350,6 @@ function renderizarFormulario(tipo) {
                 <div class="form-group"><label>Lugar (opcional)</label><input type="text" data-campo="query" placeholder="Caracas"></div>
             `;
             break;
-
         case 'vcard':
             html = `
                 <div class="form-group"><label>Nombre</label><input type="text" data-campo="nombre" placeholder="Nombre y apellido"></div>
@@ -380,11 +358,6 @@ function renderizarFormulario(tipo) {
                 <div class="form-group"><label>Correo</label><input type="email" data-campo="email" placeholder="correo@dominio.com"></div>
             `;
             break;
-
-        case 'token':
-            html = `<div class="form-group"><label>Token de acceso</label><input type="text" data-campo="token" placeholder="Token"></div>`;
-            break;
-
         default:
             break;
     }
@@ -402,22 +375,8 @@ function actualizarQRDesdeFormulario() {
 }
 
 function configurarEventos() {
-    elementos.btnActivate.addEventListener('click', async () => {
-        const token = elementos.tokenInput.value.trim();
-        if (!token) {
-            mostrarErrorToken('Ingresa un token válido.');
-            return;
-        }
-        await activarConToken(token);
-    });
-
-    elementos.tokenInput.addEventListener('keydown', async (e) => {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            const token = elementos.tokenInput.value.trim();
-            if (token) await activarConToken(token);
-        }
-    });
+    elementos.googleLoginBtn.addEventListener('click', iniciarSesionGoogle);
+    elementos.btnLogout.addEventListener('click', cerrarSesion);
 
     elementos.tabs.forEach(tab => {
         tab.addEventListener('click', () => {
@@ -482,6 +441,4 @@ function configurarEventos() {
             console.warn('Error al compartir:', error);
         }
     });
-
-    elementos.btnLogout.addEventListener('click', cerrarSesion);
 }
