@@ -45,7 +45,9 @@ function mostrarAuth(mostrar) {
         elementos.mainApp.style.display = 'none';
     } else {
         elementos.authScreen.style.display = 'none';
-        elementos.mainApp.style.display = 'block';
+        // 'flex' (no 'block'): el tema glass/neón usa display:flex en
+        // .app-container para anclar el footer abajo con margin-top:auto.
+        elementos.mainApp.style.display = 'flex';
     }
 }
 
