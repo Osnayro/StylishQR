@@ -1,0 +1,58 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>StylishQR — Administración</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <img src="logo.PNG" alt="StylishQR Admin" class="header-logo">
+            <div class="header-info">
+                <h1>StylishQR Admin</h1>
+                <p>Emisión de tokens de activación</p>
+            </div>
+            <a href="index.html" class="header-logout" style="text-decoration:none;" aria-label="Volver a la aplicación">← Volver</a>
+        </header>
+
+        <!-- Panel de administración -->
+        <section id="admin-section" style="display:block;">
+            <h2>🔑 Emisión de tokens</h2>
+
+            <div id="admin-login" class="admin-form">
+                <label for="admin-pin">PIN de administrador</label>
+                <input type="password" id="admin-pin" placeholder="Ingresa PIN maestro">
+                <button id="btn-admin-login" class="main-btn">Acceder</button>
+            </div>
+
+            <div id="admin-panel" style="display:none; margin-top:20px;">
+                <button id="btn-generate-token" class="main-btn">Generar token</button>
+                <div id="token-result" class="token-result"></div>
+                <div id="token-qr" class="token-qr"></div>
+            </div>
+        </section>
+
+        <footer class="app-footer">
+            <p>StylishQR — Desarrollado por Romeroweb</p>
+        </footer>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+    <!-- Librería QRCode Styling -->
+    <script src="https://unpkg.com/qr-code-styling@1.6.0/lib/qr-code-styling.js"></script>
+
+    <!-- Configuración Firebase -->
+    <script src="firebase-config.js"></script>
+
+    <!-- Lógica de administración -->
+    <script src="admin.js"></script>
+</body>
+</html>
