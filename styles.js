@@ -1,595 +1,618 @@
+/* ============================================================
+   STYLISHQR — ESTILOS FUTURISTAS Y MODERNOS (GLASS & NEON HUD)
+   ============================================================ */
+
+/* --- VARIABLES SISTEMA (TEMA CYBERPUNK / GLASS) --- */
 :root {
-    --azul-oscuro: #1E3A63;
-    --azul-primario: #2563EB;
-    --azul-claro: #DBEAFE;
-    --morado: #8B5CF6;
-    --morado-oscuro: #6D28D9;
-    --verde: #10B981;
-    --verde-oscuro: #059669;
-    --rojo: #EF4444;
-    --amarillo: #F59E0B;
-    --gris-claro: #F8FAFC;
-    --gris-borde: #CBD5E1;
-    --gris-texto: #1E293B;
-    --texto-secundario: #64748B;
-    --blanco: #FFFFFF;
-    --sombra-suave: 0 10px 25px rgba(0,0,0,0.06);
-    --sombra-tarjeta: 0 20px 50px rgba(0,0,0,0.12);
-    --radio-tarjeta: 20px;
+  /* Paleta Base Futuro */
+  --bg-app: #070a12;
+  --bg-card: rgba(15, 23, 42, 0.65);
+  --bg-input: rgba(30, 41, 59, 0.7);
+  --border-glass: rgba(255, 255, 255, 0.12);
+  --border-glow: rgba(0, 240, 255, 0.4);
+
+  /* Acentos Eléctricos */
+  --cyan-neon: #00f0ff;
+  --violet-neon: #7000ff;
+  --magenta-neon: #ff007a;
+  --gradiente-principal: linear-gradient(135deg, #00f0ff 0%, #7000ff 50%, #ff007a 100%);
+  --gradiente-hover: linear-gradient(135deg, #33f3ff 0%, #8b26ff 50%, #ff3395 100%);
+
+  /* Texto */
+  --texto-principal: #f8fafc;
+  --texto-secundario: #94a3b8;
+  --texto-mutado: #64748b;
+
+  /* Sombras y Luces */
+  --sombra-glow: 0 0 20px rgba(0, 240, 255, 0.25);
+  --sombra-card: 0 20px 40px rgba(0, 0, 0, 0.6);
+  --transicion: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    -webkit-tap-highlight-color: transparent;
-}
-
-:focus-visible {
-    outline: 3px solid var(--azul-primario);
-    outline-offset: 2px;
-    border-radius: 8px;
+/* --- RESETEO BÁSICO --- */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 body {
-    background: linear-gradient(135deg, #E8F1F5 0%, #F5F3FF 100%);
-    min-height: 100vh;
-    padding: 20px;
-    color: var(--gris-texto);
-    overflow-x: hidden;
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  background-color: var(--bg-app);
+  background-image: 
+    radial-gradient(circle at 15% 15%, rgba(112, 0, 255, 0.15) 0%, transparent 40%),
+    radial-gradient(circle at 85% 85%, rgba(0, 240, 255, 0.12) 0%, transparent 40%);
+  background-attachment: fixed;
+  color: var(--texto-principal);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.5;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* ============================================================
-   PANTALLA DE ACTIVACIÓN
-   ============================================================ */
-.fullscreen-overlay {
-    position: fixed;
-    inset: 0;
-    background: linear-gradient(135deg, #1E3A63 0%, #3B2F63 100%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-    z-index: 1000;
-    animation: fadeIn 0.4s ease-out;
+:focus-visible {
+  outline: 2px solid var(--cyan-neon);
+  outline-offset: 2px;
+  border-radius: 8px;
 }
 
-.activation-card {
-    background: var(--blanco);
-    width: 100%;
-    max-width: 420px;
-    border-radius: 28px;
-    padding: 32px 26px;
-    text-align: center;
-    box-shadow: var(--sombra-tarjeta);
-    animation: popIn 0.4s cubic-bezier(0.34,1.56,0.64,1);
-}
-
-.activation-logo {
-    width: 90px;
-    height: 90px;
-    object-fit: contain;
-    margin-bottom: 10px;
-    border-radius: 20px;
-    background: #F5F3FF;
-    padding: 8px;
-    box-shadow: 0 4px 14px rgba(139,92,246,0.2);
-}
-
-.activation-title {
-    font-size: 1.8rem;
-    font-weight: 800;
-    color: var(--azul-oscuro);
-    margin-bottom: 6px;
-}
-
-.activation-subtitle {
-    font-size: 0.95rem;
-    color: var(--texto-secundario);
-    margin-bottom: 24px;
-    line-height: 1.4;
-}
-
-.activation-input-group {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    text-align: left;
-}
-
-.activation-label {
-    font-weight: 700;
-    font-size: 0.85rem;
-    color: #475569;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.token-input {
-    width: 100%;
-    padding: 14px 16px;
-    border-radius: 14px;
-    border: 2px solid var(--gris-borde);
-    font-size: 1rem;
-    font-weight: 600;
-    transition: border-color 0.2s ease;
-    background: var(--gris-claro);
-}
-
-.token-input:focus {
-    border-color: var(--morado);
-    background: var(--blanco);
-    box-shadow: 0 0 0 4px rgba(139,92,246,0.15);
-}
-
-.token-error {
-    min-height: 24px;
-    margin-top: 10px;
-    color: var(--rojo);
-    font-weight: 600;
-    font-size: 0.85rem;
-}
-
-.activation-note {
-    font-size: 0.78rem;
-    color: var(--texto-secundario);
-    margin-top: 20px;
-}
-
-/* ============================================================
-   APP PRINCIPAL
-   ============================================================ */
+/* --- LAYOUT GENERAL --- */
 .app-container {
-    max-width: 1100px;
-    margin: 0 auto;
-    background: var(--blanco);
-    border-radius: var(--radio-tarjeta);
-    box-shadow: var(--sombra-suave);
-    padding: 24px;
-    animation: fadeIn 0.5s ease-out;
+  max-width: 1280px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
 }
 
+/* --- HEADER --- */
 .app-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding-bottom: 16px;
-    border-bottom: 1px solid #E2E8F0;
-    margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-card);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-glass);
+  padding: 16px 24px;
+  border-radius: 20px;
+  margin-bottom: 24px;
+  box-shadow: var(--sombra-card);
 }
 
 .header-logo {
-    width: 55px;
-    height: 55px;
-    object-fit: contain;
-    border-radius: 14px;
-    background: #F5F3FF;
-    padding: 5px;
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 8px rgba(0, 240, 255, 0.5));
+}
+
+.header-info {
+  flex: 1;
+  margin-left: 16px;
 }
 
 .header-info h1 {
-    font-size: 1.5rem;
-    font-weight: 800;
-    color: var(--azul-oscuro);
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  background: var(--gradiente-principal);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.5px;
 }
 
 .header-info p {
-    font-size: 0.85rem;
-    color: var(--texto-secundario);
+  font-size: 0.85rem;
+  color: var(--texto-secundario);
 }
 
 .header-logout {
-    margin-left: auto;
-    background: none;
-    border: none;
-    font-size: 1.5rem;
-    cursor: pointer;
-    padding: 8px;
-    border-radius: 12px;
-    transition: background 0.2s ease;
-    display: inline-flex;
-    align-items: center;
-    color: var(--gris-texto);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-glass);
+  color: var(--texto-principal);
+  padding: 10px 16px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: var(--transicion);
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .header-logout:hover {
-    background: #FEE2E2;
+  background: rgba(255, 0, 122, 0.2);
+  border-color: var(--magenta-neon);
+  /* Bug corregido: "rgba(ff, 0, 122, 0.3)" no es válido (ff no es un número).
+     Era 255. */
+  box-shadow: 0 0 12px rgba(255, 0, 122, 0.3);
 }
 
-.main-content {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 24px;
-    margin-bottom: 30px;
+/* --- OVERLAY AUTENTICACIÓN / ACCESO --- */
+.fullscreen-overlay {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at center, #0f172a 0%, #070a12 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
 }
 
-/* ============================================================
-   PANEL DE FORMULARIO Y PESTAÑAS
-   ============================================================ */
-.form-panel,
-.preview-panel {
-    background: var(--gris-claro);
-    border-radius: 18px;
-    padding: 20px;
-    border: 1px solid #E2E8F0;
+.activation-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border-glass);
+  border-radius: 28px;
+  padding: 40px 32px;
+  max-width: 420px;
+  width: 100%;
+  text-align: center;
+  box-shadow: var(--sombra-card), 0 0 40px rgba(0, 240, 255, 0.1);
+  animation: floatIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.tabs {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 18px;
+.activation-logo {
+  width: 80px;
+  height: 80px;
+  margin-bottom: 20px;
+  filter: drop-shadow(0 0 12px var(--cyan-neon));
 }
 
-.tab-btn {
-    background: var(--blanco);
-    border: 2px solid var(--gris-borde);
-    border-radius: 20px;
-    padding: 8px 14px;
-    font-size: 0.8rem;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    color: var(--texto-secundario);
+.activation-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 2.2rem;
+  font-weight: 700;
+  background: var(--gradiente-principal);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 8px;
 }
 
-.tab-btn:hover {
-    border-color: var(--morado);
-    color: var(--morado);
+.activation-subtitle {
+  font-size: 0.95rem;
+  color: var(--texto-secundario);
+  margin-bottom: 28px;
 }
 
-.tab-btn.active {
-    background: var(--morado);
-    border-color: var(--morado);
-    color: var(--blanco);
+.activation-note {
+  font-size: 0.8rem;
+  color: var(--texto-mutado);
+  margin-top: 16px;
 }
 
-.form-container {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-}
-
-.form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-
-.form-group label {
-    font-size: 0.85rem;
-    font-weight: 700;
-    color: #475569;
-}
-
-.form-group input,
-.form-group select,
-.form-group textarea {
-    padding: 12px 14px;
-    border-radius: 12px;
-    border: 2px solid var(--gris-borde);
-    font-size: 0.95rem;
-    font-family: inherit;
-    transition: border-color 0.2s ease;
-    background: var(--blanco);
-}
-
-.form-group input:focus,
-.form-group select:focus,
-.form-group textarea:focus {
-    border-color: var(--azul-primario);
-    box-shadow: 0 0 0 4px rgba(37,99,235,0.1);
-}
-
-textarea {
-    resize: vertical;
-    min-height: 70px;
-}
-
-/* ============================================================
-   PANEL DE PERSONALIZACIÓN Y VISTA PREVIA
-   ============================================================ */
-.preview-panel h2 {
-    font-size: 1.2rem;
-    font-weight: 800;
-    color: var(--azul-oscuro);
-    margin-bottom: 16px;
-}
-
-.customization-group {
-    margin-bottom: 14px;
-}
-
-.customization-group label {
-    display: block;
-    font-size: 0.85rem;
-    font-weight: 700;
-    color: #475569;
-    margin-bottom: 6px;
-}
-
-.customization-group input[type="color"] {
-    width: 60px;
-    height: 40px;
-    border: 2px solid var(--gris-borde);
-    border-radius: 10px;
-    padding: 2px;
-    cursor: pointer;
-}
-
-.customization-group input[type="range"] {
-    width: 100%;
-    cursor: pointer;
-}
-
-.customization-group select {
-    width: 100%;
-    padding: 10px 12px;
-    border-radius: 12px;
-    border: 2px solid var(--gris-borde);
-    background: var(--blanco);
-    font-family: inherit;
-    font-size: 0.9rem;
-}
-
-.qr-preview {
-    margin: 20px 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 240px;
-    background: var(--blanco);
-    border-radius: 16px;
-    border: 1px solid #E2E8F0;
-    padding: 16px;
-}
-
-.qr-preview canvas,
-.qr-preview img {
-    max-width: 240px;
-    max-height: 240px;
-}
-
-/* ============================================================
-   BOTONES
-   ============================================================ */
+/* --- BOTONES PRINCIPALES Y SECUNDARIOS --- */
 .main-btn {
-    width: 100%;
-    padding: 14px 20px;
-    border: none;
-    border-radius: 14px;
-    background: linear-gradient(135deg, var(--azul-primario), var(--azul-oscuro));
-    color: var(--blanco);
-    font-weight: 700;
-    font-size: 1rem;
-    cursor: pointer;
-    box-shadow: 0 8px 20px rgba(37,99,235,0.25);
-    transition: all 0.3s ease;
-    min-height: 48px;
+  width: 100%;
+  padding: 14px 24px;
+  background: var(--gradiente-principal);
+  border: none;
+  border-radius: 14px;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: var(--transicion);
+  box-shadow: var(--sombra-glow);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .main-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 12px 30px rgba(37,99,235,0.35);
+  background: var(--gradiente-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 0 30px rgba(0, 240, 255, 0.5);
 }
 
 .main-btn:active {
-    transform: scale(0.97);
+  transform: translateY(0);
 }
 
 .main-btn:disabled {
-    background: #94A3B8;
-    cursor: not-allowed;
-    box-shadow: none;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--texto-mutado);
+  cursor: not-allowed;
+  box-shadow: none;
 }
 
-/* Botón "Iniciar sesión con Google": blanco con borde, como pide la guía
-   de marca de Google (evita imitar su gradiente azul propio). */
 .google-btn {
-    background: var(--blanco);
-    color: var(--gris-texto);
-    border: 2px solid var(--gris-borde);
-    box-shadow: none;
+  background: #ffffff;
+  color: #0f172a;
+  box-shadow: 0 4px 15px rgba(255, 255, 255, 0.15);
 }
 
 .google-btn:hover {
-    border-color: var(--azul-primario);
-    box-shadow: 0 4px 14px rgba(37,99,235,0.15);
-    transform: translateY(-1px);
+  background: #f1f5f9;
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
 }
 
 .secondary-btn {
-    width: 100%;
-    margin-top: 8px;
-    padding: 12px 18px;
-    border: 2px solid var(--gris-borde);
-    border-radius: 14px;
-    background: var(--blanco);
-    color: var(--gris-texto);
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.2s ease;
+  width: 100%;
+  padding: 12px 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-glass);
+  border-radius: 12px;
+  color: var(--texto-principal);
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: var(--transicion);
+  margin-top: 10px;
 }
 
 .secondary-btn:hover {
-    border-color: var(--azul-primario);
-    color: var(--azul-primario);
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--cyan-neon);
+  color: var(--cyan-neon);
 }
 
-/* ============================================================
-   SECCIÓN ADMINISTRADOR
-   ============================================================ */
-#admin-section,
-#admin-panel {
-    background: #F5F3FF;
-    border-radius: 18px;
-    padding: 20px;
-    margin-top: 24px;
-    border: 1px solid #C4B5FD;
+/* --- CONTENIDO PRINCIPAL (SPLIT PANEL) --- */
+.main-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  flex: 1;
 }
 
-#admin-section h2,
-#admin-panel h2 {
-    font-size: 1.1rem;
-    color: var(--morado-oscuro);
-    margin-bottom: 14px;
+.form-panel, .preview-panel {
+  background: var(--bg-card);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-glass);
+  border-radius: 24px;
+  padding: 24px;
+  box-shadow: var(--sombra-card);
 }
 
-.admin-form {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    max-width: 320px;
+.preview-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
-.admin-form label {
-    font-weight: 700;
-    font-size: 0.85rem;
-    color: #475569;
+.preview-panel h2 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.25rem;
+  width: 100%;
+  margin-bottom: 20px;
+  color: var(--cyan-neon);
+  border-bottom: 1px solid var(--border-glass);
+  padding-bottom: 10px;
 }
 
-.admin-form input {
-    padding: 12px 14px;
-    border-radius: 12px;
-    border: 2px solid var(--gris-borde);
-    font-size: 1rem;
+/* --- PESTAÑAS (TABS) DE FORMULARIOS --- */
+.tabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 12px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--border-glass);
 }
 
-.admin-link {
-    background: none;
-    border: none;
-    color: var(--morado);
-    font-weight: 700;
-    font-size: 0.85rem;
-    cursor: pointer;
-    text-decoration: underline;
-    margin-top: 16px;
+.tabs::-webkit-scrollbar {
+  height: 4px;
+}
+.tabs::-webkit-scrollbar-thumb {
+  background: var(--cyan-neon);
+  border-radius: 4px;
 }
 
-.token-result {
-    margin-top: 16px;
-    background: var(--blanco);
-    border-radius: 14px;
-    padding: 16px;
-    font-weight: 700;
-    text-align: center;
-    border: 1px solid #E2E8F0;
-    word-break: break-all;
+.tab-btn {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-glass);
+  color: var(--texto-secundario);
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: var(--transicion);
 }
 
-.token-qr {
-    display: flex;
-    justify-content: center;
-    margin-top: 10px;
+.tab-btn:hover {
+  color: var(--texto-principal);
+  border-color: rgba(0, 240, 255, 0.3);
 }
 
-/* Lista de usuarios del panel de administración */
+.tab-btn.active {
+  background: rgba(0, 240, 255, 0.15);
+  border-color: var(--cyan-neon);
+  color: var(--cyan-neon);
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
+}
+
+/* --- FORMULARIOS E INPUTS --- */
+.form-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Los formularios de cada pestaña (app.js) generan
+   <div class="form-group"><label>...</label><input ...></div>.
+   Esta clase faltaba en el CSS original. */
+.form-group {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.customization-group, .admin-form {
+  width: 100%;
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--texto-secundario);
+}
+
+input[type="text"],
+input[type="email"],
+input[type="url"],
+input[type="tel"],
+input[type="number"],
+input[type="datetime-local"],
+input[type="password"],
+select,
+textarea {
+  width: 100%;
+  padding: 12px 16px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-glass);
+  border-radius: 12px;
+  color: var(--texto-principal);
+  font-size: 0.95rem;
+  font-family: inherit;
+  outline: none;
+  transition: var(--transicion);
+}
+
+textarea {
+  resize: vertical;
+  min-height: 70px;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--cyan-neon);
+  box-shadow: 0 0 12px rgba(0, 240, 255, 0.3);
+}
+
+input[type="color"] {
+  height: 48px;
+  padding: 4px;
+  cursor: pointer;
+  border-radius: 12px;
+  border: 1px solid var(--border-glass);
+  background: var(--bg-input);
+}
+
+input[type="range"] {
+  accent-color: var(--cyan-neon);
+  cursor: pointer;
+}
+
+input[type="file"] {
+  color: var(--texto-secundario);
+  font-size: 0.85rem;
+}
+
+/* --- CONTENEDOR DE VISTA PREVIA QR --- */
+.qr-preview {
+  width: 280px;
+  height: 280px;
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 20px 0;
+  box-shadow: 0 0 30px rgba(0, 240, 255, 0.2);
+  border: 2px solid var(--border-glow);
+  position: relative;
+  overflow: hidden;
+}
+
+.qr-preview canvas, .qr-preview img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* --- PANEL DE ADMINISTRACIÓN --- */
+/* Contenedor que faltaba: sin esto, el panel queda "flotando" sin tarjeta
+   sobre el fondo oscuro (admin.html usa id="admin-panel"). */
+#admin-panel,
+#admin-section {
+  background: var(--bg-card);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-glass);
+  border-radius: 24px;
+  padding: 24px;
+  margin-top: 24px;
+  box-shadow: var(--sombra-card);
+}
+
+#admin-panel h2,
+#admin-section h2 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.2rem;
+  color: var(--cyan-neon);
+  margin-bottom: 16px;
+}
+
 .admin-users-list {
-    margin: 16px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 20px 0;
+  max-height: 300px;
+  overflow-y: auto;
 }
 
+.admin-users-list h3 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1rem;
+  color: var(--texto-secundario);
+  margin-bottom: 8px;
+}
+
+.admin-users-list p {
+  color: var(--texto-mutado);
+  font-size: 0.9rem;
+}
+
+/* admin.js genera <ul class="admin-user-list"><li>...</li></ul>, no
+   .user-item — se estiliza el <li> real para que coincida con el JS. */
 .admin-user-list {
-    list-style: none;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .admin-user-list li {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 10px;
-    background: var(--blanco);
-    border: 1px solid #E2E8F0;
-    border-radius: 12px;
-    padding: 10px 14px;
-    font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-glass);
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: 0.85rem;
 }
 
 .admin-user-list li span:first-child {
-    flex: 1 1 auto;
-    font-weight: 600;
-    word-break: break-all;
+  flex: 1 1 auto;
+  font-weight: 600;
+  word-break: break-all;
+  color: var(--texto-principal);
 }
 
 .admin-user-list li button {
-    width: auto;
-    margin-top: 0;
-    padding: 6px 12px;
-    font-size: 0.78rem;
-    border-radius: 10px;
-    border: 2px solid var(--gris-borde);
-    background: var(--blanco);
-    cursor: pointer;
-    font-weight: 700;
-    transition: all 0.2s ease;
+  width: auto;
+  margin-top: 0;
+  padding: 6px 14px;
+  font-size: 0.78rem;
+  border-radius: 10px;
+  border: 1px solid var(--border-glass);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--texto-principal);
+  cursor: pointer;
+  font-weight: 600;
+  transition: var(--transicion);
 }
 
 .admin-user-list li .btn-toggle-user:hover {
-    border-color: var(--verde);
-    color: var(--verde-oscuro);
+  border-color: var(--cyan-neon);
+  color: var(--cyan-neon);
 }
 
 .admin-user-list li .btn-delete-user:hover {
-    border-color: var(--rojo);
-    color: var(--rojo);
+  border-color: var(--magenta-neon);
+  color: var(--magenta-neon);
 }
 
+/* Compatibilidad: mismo componente visual para "user-item" si se usa en
+   otra vista. */
+.user-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-glass);
+  padding: 12px 16px;
+  border-radius: 12px;
+}
+
+.token-error {
+  background: rgba(255, 0, 122, 0.15);
+  border: 1px solid var(--magenta-neon);
+  color: #ff66b2;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  margin-top: 12px;
+  min-height: 20px;
+  /* Antes tenía "display: none" fijo, así que el mensaje de error nunca
+     aparecía aunque el JS le pusiera texto (mostrarErrorAuth/mostrarErrorLogin
+     solo cambian textContent, nunca display). Ahora se oculta solo cuando
+     está vacío. */
+  display: block;
+}
+
+.token-error:empty {
+  border-color: transparent;
+  background: transparent;
+  padding: 0;
+  margin-top: 0;
+  min-height: 0;
+}
+
+/* --- FOOTER --- */
 .app-footer {
-    text-align: center;
-    font-size: 0.8rem;
-    color: var(--texto-secundario);
-    margin-top: 20px;
+  text-align: center;
+  padding: 24px 0 12px 0;
+  font-size: 0.8rem;
+  color: var(--texto-mutado);
+  margin-top: auto;
 }
 
-/* ============================================================
-   ANIMACIONES
-   ============================================================ */
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+/* --- ANIMACIONES --- */
+@keyframes floatIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
-@keyframes popIn {
-    from { opacity: 0; transform: scale(0.9); }
-    to { opacity: 1; transform: scale(1); }
+/* --- RESPONSIVIDAD (MÓVILES) --- */
+@media (max-width: 900px) {
+  .main-content {
+    grid-template-columns: 1fr;
+  }
+
+  .qr-preview {
+    width: 240px;
+    height: 240px;
+  }
 }
 
-/* ============================================================
-   RESPONSIVE
-   ============================================================ */
-@media (max-width: 768px) {
-    body {
-        padding: 10px;
-    }
+@media (max-width: 480px) {
+  .app-header {
+    padding: 12px 16px;
+  }
 
-    .app-container {
-        padding: 16px;
-    }
+  .header-info h1 {
+    font-size: 1.2rem;
+  }
 
-    .main-content {
-        grid-template-columns: 1fr;
-        gap: 16px;
-    }
-
-    .header-info h1 {
-        font-size: 1.2rem;
-    }
-
-    .tabs {
-        gap: 6px;
-    }
-
-    .tab-btn {
-        padding: 6px 10px;
-        font-size: 0.75rem;
-    }
-
-    .qr-preview canvas,
-    .qr-preview img {
-        max-width: 200px;
-        max-height: 200px;
-    }
+  .activation-card {
+    padding: 28px 20px;
+  }
 }
