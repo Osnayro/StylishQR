@@ -1,48 +1,48 @@
 
-
-
 /**
  * StylishQR — Administración
- * Gestión de usuarios autorizados y PIN maestro desde Firestore.
+ * Gestión de usuarios autorizados desde Firestore.
+ *
+ * IMPORTANTE: el acceso ahora se controla con el mismo inicio de sesión con
+ * Google que usa la app principal, verificando el correo contra la
+ * colección "admins" en Firestore (campo activo === true), en vez de un PIN
+ * comparado en el navegador. Un PIN revisado en JavaScript nunca es
+ * seguridad real: cualquiera puede leerlo desde el código fuente o llamar
+ * a las funciones de Firestore directamente desde la consola del
+ * navegador. La única protección real vive en las Reglas de Seguridad de
+ * Firestore (ver firestore.rules incluido junto a estos archivos): sin
+ * reglas que exijan pertenecer a "admins", esta pantalla es solo una
+ * cortina, no una cerradura.
  */
 
-let estaAutenticado = false;
+let adminActual = null;
 
 const elementos = {};
 
 document.addEventListener('DOMContentLoaded', () => {
     referenciarElementos();
     configurarEventos();
-
-    // Habilitar botón de login cuando admin.js esté listo
-    if (elementos.btnLogin) elementos.btnLogin.disabled = false;
+    verificarSesionAdmin();
 });
 
 function referenciarElementos() {
-    elementos.pinInput = document.getElementById('admin-pin');
-    elementos.btnLogin = document.getElementById('btn-admin-login');
-    elementos.loginError = document.getElementById('admin-login-error');
     elementos.loginSection = document.getElementById('admin-login-section');
+    elementos.googleLoginBtn = document.getElementById('admin-google-login-btn');
+    elementos.loginError = document.getElementById('admin-login-error');
     elementos.panel = document.getElementById('admin-panel');
+    elementos.btnLogoutAdmin = document.getElementById('btn-admin-logout');
+    elementos.adminEmailLabel = document.getElementById('admin-email-label');
 
     elementos.userEmailInput = document.getElementById('user-email');
     elementos.btnAddUser = document.getElementById('btn-add-user');
     elementos.userError = document.getElementById('admin-user-error');
     elementos.usersList = document.getElementById('users-list');
     elementos.btnRefreshUsers = document.getElementById('btn-refresh-users');
-
-    elementos.newPinInput = document.getElementById('new-pin');
-    elementos.btnChangePin = document.getElementById('btn-change-pin');
 }
 
 function configurarEventos() {
-    elementos.btnLogin.addEventListener('click', verificarPin);
-    elementos.pinInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            verificarPin();
-        }
-    });
+    elementos.googleLoginBtn.addEventListener('click', iniciarSesionAdmin);
+    elementos.btnLogoutAdmin.addEventListener('click', cerrarSesionAdmin);
 
     elementos.btnAddUser.addEventListener('click', agregarUsuario);
     elementos.userEmailInput.addEventListener('keydown', (e) => {
@@ -53,71 +53,104 @@ function configurarEventos() {
     });
 
     elementos.btnRefreshUsers.addEventListener('click', cargarUsuarios);
-    elementos.btnChangePin.addEventListener('click', cambiarPin);
 }
 
 // ==================== AUTENTICACIÓN ADMIN ====================
-async function verificarPin() {
-    const pin = elementos.pinInput.value.trim();
+function verificarSesionAdmin() {
+    mostrarPanel(false);
 
-    if (!pin) {
-        mostrarErrorLogin('Ingresa el PIN de administrador.');
+    window.auth?.onAuthStateChanged((user) => {
+        if (user) {
+            verificarEsAdmin(user);
+        } else {
+            adminActual = null;
+            mostrarPanel(false);
+        }
+    });
+}
+
+async function iniciarSesionAdmin() {
+    if (!window.auth) {
+        mostrarErrorLogin('Firebase Auth no está disponible.');
         return;
     }
 
+    const provider = new firebase.auth.GoogleAuthProvider();
+    try {
+        const resultado = await window.auth.signInWithPopup(provider);
+        await verificarEsAdmin(resultado.user);
+    } catch (error) {
+        console.error('Error en autenticación de administrador:', error);
+        mostrarErrorLogin('No se pudo completar el inicio de sesión.');
+    }
+}
+
+async function verificarEsAdmin(user) {
     if (!window.db) {
         mostrarErrorLogin('Base de datos no disponible.');
         return;
     }
 
     try {
-        const pinRef = window.db.collection('config').doc('admin');
-        const doc = await pinRef.get();
+        const email = user.email.toLowerCase();
+        const docRef = window.db.collection('admins').doc(email);
+        const doc = await docRef.get();
 
-        if (!doc.exists) {
-            // Primer inicio: permitir PIN temporal "admin123" y crearlo
-            if (pin === 'admin123') {
-                await pinRef.set({
-                    pin: 'admin123',
-                    actualizado: firebase.firestore.FieldValue.serverTimestamp()
-                });
-                permitirAcceso();
-                return;
-            } else {
-                mostrarErrorLogin('PIN incorrecto.');
-                return;
-            }
-        }
-
-        const data = doc.data();
-        if (data.pin === pin) {
-            permitirAcceso();
+        if (doc.exists && doc.data().activo === true) {
+            adminActual = user;
+            mostrarErrorLogin('');
+            mostrarPanel(true);
+            cargarUsuarios();
         } else {
-            mostrarErrorLogin('PIN incorrecto.');
+            await window.auth.signOut();
+            mostrarPanel(false);
+            mostrarErrorLogin('Tu cuenta no tiene permisos de administrador.');
         }
     } catch (error) {
-        console.error('Error verificando PIN:', error);
-        mostrarErrorLogin('No se pudo verificar el PIN.');
+        console.error('Error verificando permisos de administrador:', error);
+        mostrarErrorLogin('No se pudo verificar tu acceso.');
     }
 }
 
-function permitirAcceso() {
-    estaAutenticado = true;
-    elementos.loginSection.style.display = 'none';
-    elementos.panel.style.display = 'block';
-    elementos.pinInput.value = '';
-    cargarUsuarios();
+async function cerrarSesionAdmin() {
+    if (window.auth) {
+        await window.auth.signOut();
+    }
+    adminActual = null;
+    mostrarPanel(false);
+}
+
+function mostrarPanel(mostrar) {
+    if (mostrar && adminActual) {
+        elementos.loginSection.style.display = 'none';
+        elementos.panel.style.display = 'block';
+        if (elementos.adminEmailLabel) {
+            elementos.adminEmailLabel.textContent = adminActual.email;
+        }
+    } else {
+        elementos.loginSection.style.display = 'block';
+        elementos.panel.style.display = 'none';
+    }
 }
 
 function mostrarErrorLogin(mensaje) {
     elementos.loginError.textContent = mensaje;
 }
 
+// ==================== UTILIDAD: ESCAPE DE HTML ====================
+// Evita que un valor almacenado en Firestore (email o id de documento) se
+// interprete como HTML/JS al insertarlo con innerHTML.
+function escaparHTML(valor) {
+    const div = document.createElement('div');
+    div.textContent = String(valor ?? '');
+    return div.innerHTML;
+}
+
 // ==================== GESTIÓN DE USUARIOS ====================
 async function agregarUsuario() {
     const email = elementos.userEmailInput.value.trim().toLowerCase();
 
-    if (!email || !email.includes('@')) {
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         mostrarErrorUsuario('Ingresa un correo válido.');
         return;
     }
@@ -160,15 +193,18 @@ async function cargarUsuarios() {
             html += '<ul class="admin-user-list">';
             snapshot.forEach(doc => {
                 const data = doc.data();
-                const estado = data.activo === true ? '✅ Activo' : '❌ Inactivo';
+                const activo = data.activo === true;
+                const estado = activo ? '✅ Activo' : '❌ Inactivo';
+                const emailSeguro = escaparHTML(data.email || doc.id);
+                const idSeguro = escaparHTML(doc.id);
                 html += `
                     <li>
-                        <span>${data.email || doc.id}</span>
+                        <span>${emailSeguro}</span>
                         <span>${estado}</span>
-                        <button type="button" data-id="${doc.id}" data-activo="${data.activo === true}" class="btn-toggle-user">
-                            ${data.activo === true ? 'Desactivar' : 'Activar'}
+                        <button type="button" data-id="${idSeguro}" data-activo="${activo}" class="btn-toggle-user">
+                            ${activo ? 'Desactivar' : 'Activar'}
                         </button>
-                        <button type="button" data-id="${doc.id}" class="btn-delete-user">Eliminar</button>
+                        <button type="button" data-id="${idSeguro}" class="btn-delete-user">Eliminar</button>
                     </li>
                 `;
             });
@@ -225,33 +261,5 @@ async function eliminarUsuario(email) {
     } catch (error) {
         console.error('Error eliminando usuario:', error);
         alert('No se pudo eliminar el usuario.');
-    }
-}
-
-// ==================== CAMBIAR PIN ====================
-async function cambiarPin() {
-    const nuevoPin = elementos.newPinInput.value.trim();
-
-    if (!nuevoPin || nuevoPin.length < 4) {
-        alert('El PIN debe tener al menos 4 caracteres.');
-        return;
-    }
-
-    if (!window.db) {
-        alert('Base de datos no disponible.');
-        return;
-    }
-
-    try {
-        await window.db.collection('config').doc('admin').set({
-            pin: nuevoPin,
-            actualizado: firebase.firestore.FieldValue.serverTimestamp()
-        }, { merge: true });
-
-        elementos.newPinInput.value = '';
-        alert('PIN actualizado correctamente.');
-    } catch (error) {
-        console.error('Error cambiando PIN:', error);
-        alert('No se pudo actualizar el PIN.');
     }
 }
