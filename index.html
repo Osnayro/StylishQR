@@ -1,0 +1,152 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>StylishQR — Códigos QR con estilo</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1E3A63">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="StylishQR">
+    <link rel="apple-touch-icon" href="logo.PNG">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- ============================================================ -->
+    <!-- ACTIVATION SCREEN (TOKEN) -->
+    <!-- ============================================================ -->
+    <div id="activation-screen" class="fullscreen-overlay">
+        <div class="activation-card">
+            <img src="logo.PNG" alt="StylishQR Logo" class="activation-logo">
+            <h1 class="activation-title">StylishQR</h1>
+            <p class="activation-subtitle">Genera códigos QR con estilo, logos y colores</p>
+
+            <div class="activation-input-group">
+                <label for="token-input" class="activation-label">Token de activación</label>
+                <input type="text" id="token-input" class="token-input" placeholder="Ingresa tu token" maxlength="60" autocomplete="off">
+                <button id="btn-activate-token" class="main-btn">Activar aplicación 🔓</button>
+            </div>
+
+            <div id="token-error" class="token-error" role="alert"></div>
+
+            <p class="activation-note">¿No tienes token? Solicítalo al administrador o escanea el QR de activación.</p>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- MAIN APP -->
+    <!-- ============================================================ -->
+    <div id="main-app" class="app-container" style="display:none;">
+        <!-- Header -->
+        <header class="app-header">
+            <img src="logo.PNG" alt="StylishQR" class="header-logo">
+            <div class="header-info">
+                <h1>StylishQR</h1>
+                <p>Personaliza, genera y descarga</p>
+            </div>
+            <button id="btn-logout" class="header-logout" title="Cerrar sesión" aria-label="Cerrar sesión">🚪</button>
+        </header>
+
+        <!-- Contenido principal -->
+        <main class="main-content">
+            <!-- Columna izquierda: formulario -->
+            <section class="form-panel">
+                <div class="tabs">
+                    <button class="tab-btn active" data-tab="text">Texto</button>
+                    <button class="tab-btn" data-tab="url">Web</button>
+                    <button class="tab-btn" data-tab="pagomovil">Pago Móvil</button>
+                    <button class="tab-btn" data-tab="wifi">Wi-Fi</button>
+                    <button class="tab-btn" data-tab="email">Correo</button>
+                    <button class="tab-btn" data-tab="telefono">Teléfono</button>
+                    <button class="tab-btn" data-tab="evento">Evento</button>
+                    <button class="tab-btn" data-tab="ubicacion">Ubicación</button>
+                    <button class="tab-btn" data-tab="vcard">Contacto</button>
+                    <button class="tab-btn" data-tab="token">Token QR</button>
+                </div>
+
+                <div id="form-container" class="form-container">
+                    <!-- Los formularios se inyectan desde app.js -->
+                </div>
+            </section>
+
+            <!-- Columna derecha: personalización y vista previa -->
+            <section class="preview-panel">
+                <h2>Personalización</h2>
+
+                <div class="customization-group">
+                    <label for="qr-color">Color del QR</label>
+                    <input type="color" id="qr-color" value="#1E3A63">
+                </div>
+
+                <div class="customization-group">
+                    <label for="bg-color">Color de fondo</label>
+                    <input type="color" id="bg-color" value="#FFFFFF">
+                </div>
+
+                <div class="customization-group">
+                    <label for="logo-upload">Logo central</label>
+                    <input type="file" id="logo-upload" accept="image/*">
+                    <button id="btn-remove-logo" class="secondary-btn">Quitar logo</button>
+                </div>
+
+                <div class="customization-group">
+                    <label for="logo-size">Tamaño del logo (%)</label>
+                    <input type="range" id="logo-size" min="10" max="50" value="25">
+                    <span id="logo-size-value">25%</span>
+                </div>
+
+                <div class="customization-group">
+                    <label for="qr-shape">Forma de los módulos</label>
+                    <select id="qr-shape">
+                        <option value="square">Cuadrados</option>
+                        <option value="rounded">Redondeados</option>
+                        <option value="dots">Círculos</option>
+                    </select>
+                </div>
+
+                <div id="qr-preview" class="qr-preview">
+                    <!-- El QR se dibuja aquí -->
+                </div>
+
+                <button id="btn-download" class="main-btn">Descargar QR ⬇️</button>
+                <button id="btn-share" class="secondary-btn">Compartir QR 📤</button>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="app-footer">
+            <p>Desarrollado por Romeroweb</p>
+        </footer>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- SCRIPTS -->
+    <!-- ============================================================ -->
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+    <!-- Librería QRCode Styling -->
+    <script src="https://unpkg.com/qr-code-styling@1.6.0/lib/qr-code-styling.js"></script>
+
+    <!-- Configuración Firebase -->
+    <script src="firebase-config.js"></script>
+
+    <!-- Lógica principal -->
+    <script src="app.js"></script>
+
+    <!-- Registro del Service Worker -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./service-worker.js')
+                    .then(reg => console.log('StylishQR SW registrado'))
+                    .catch(err => console.error('Error SW:', err));
+            });
+        }
+    </script>
+</body>
+</html>
