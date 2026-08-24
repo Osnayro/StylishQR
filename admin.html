@@ -15,25 +15,46 @@
             <img src="logo.PNG" alt="StylishQR Admin" class="header-logo">
             <div class="header-info">
                 <h1>StylishQR Admin</h1>
-                <p>Emisión de tokens de activación</p>
+                <p>Gestión de usuarios autorizados</p>
             </div>
             <a href="index.html" class="header-logout" style="text-decoration:none;" aria-label="Volver a la aplicación">← Volver</a>
         </header>
 
-        <!-- Panel de administración -->
-        <section id="admin-section" style="display:block;">
-            <h2>🔑 Emisión de tokens</h2>
+        <!-- Login de administrador -->
+        <section id="admin-login-section" class="admin-form">
+            <h2>🔑 Acceso de administrador</h2>
+            <label for="admin-pin">PIN de administrador</label>
+            <input type="password" id="admin-pin" placeholder="Ingresa PIN maestro" autocomplete="off">
+            <button id="btn-admin-login" type="button" class="main-btn" disabled>Acceder</button>
+            <div id="admin-login-error" class="token-error" role="alert"></div>
+        </section>
 
-            <div id="admin-login" class="admin-form">
-                <label for="admin-pin">PIN de administrador</label>
-                <input type="password" id="admin-pin" placeholder="Ingresa PIN maestro" autocomplete="off">
-                <button id="btn-admin-login" type="button" class="main-btn" disabled>Acceder</button>
+        <!-- Panel de administración -->
+        <section id="admin-panel" style="display:none; margin-top:20px;">
+            <h2>👥 Usuarios autorizados</h2>
+
+            <!-- Agregar usuario -->
+            <div class="admin-form">
+                <label for="user-email">Correo del usuario</label>
+                <input type="email" id="user-email" placeholder="usuario@gmail.com" autocomplete="off">
+                <button id="btn-add-user" type="button" class="main-btn">Agregar usuario</button>
             </div>
 
-            <div id="admin-panel" style="display:none; margin-top:20px;">
-                <button id="btn-generate-token" type="button" class="main-btn">Generar token</button>
-                <div id="token-result" class="token-result"></div>
-                <div id="token-qr" class="token-qr"></div>
+            <div id="admin-user-error" class="token-error" role="alert"></div>
+
+            <!-- Lista de usuarios -->
+            <div id="users-list" class="admin-users-list">
+                <!-- Los usuarios se cargarán desde Firestore -->
+            </div>
+
+            <button id="btn-refresh-users" type="button" class="secondary-btn">Actualizar lista</button>
+
+            <!-- Cambiar PIN -->
+            <div class="admin-form" style="margin-top:20px;">
+                <h2>🔐 Cambiar PIN de administrador</h2>
+                <label for="new-pin">Nuevo PIN</label>
+                <input type="password" id="new-pin" placeholder="Nuevo PIN" autocomplete="off">
+                <button id="btn-change-pin" type="button" class="main-btn">Actualizar PIN</button>
             </div>
         </section>
 
@@ -45,67 +66,6 @@
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-
-    <!-- Librería QRCode Styling -->
-    <script src="https://unpkg.com/qr-code-styling@1.6.0/lib/qr-code-styling.js"></script>
-
-    <!-- Configuración Firebase -->
-    <script src="firebase-config.js"></script>
-
-    <!-- Lógica de administración -->
-    <script src="admin.js"></script>
-</body>
-</html>
-
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>StylishQR — Administración</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-    <div class="app-container">
-        <!-- Header -->
-        <header class="app-header">
-            <img src="logo.PNG" alt="StylishQR Admin" class="header-logo">
-            <div class="header-info">
-                <h1>StylishQR Admin</h1>
-                <p>Emisión de tokens de activación</p>
-            </div>
-            <a href="index.html" class="header-logout" style="text-decoration:none;" aria-label="Volver a la aplicación">← Volver</a>
-        </header>
-
-        <!-- Panel de administración -->
-        <section id="admin-section" style="display:block;">
-            <h2>🔑 Emisión de tokens</h2>
-
-            <div id="admin-login" class="admin-form">
-                <label for="admin-pin">PIN de administrador</label>
-                <input type="password" id="admin-pin" placeholder="Ingresa PIN maestro">
-                <button id="btn-admin-login" class="main-btn">Acceder</button>
-            </div>
-
-            <div id="admin-panel" style="display:none; margin-top:20px;">
-                <button id="btn-generate-token" class="main-btn">Generar token</button>
-                <div id="token-result" class="token-result"></div>
-                <div id="token-qr" class="token-qr"></div>
-            </div>
-        </section>
-
-        <footer class="app-footer">
-            <p>StylishQR — Desarrollado por Romeroweb</p>
-        </footer>
-    </div>
-
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-
-    <!-- Librería QRCode Styling -->
-    <script src="https://unpkg.com/qr-code-styling@1.6.0/lib/qr-code-styling.js"></script>
 
     <!-- Configuración Firebase -->
     <script src="firebase-config.js"></script>
