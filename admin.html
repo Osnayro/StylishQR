@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -20,18 +19,25 @@
             <a href="index.html" class="header-logout" style="text-decoration:none;" aria-label="Volver a la aplicación">← Volver</a>
         </header>
 
-        <!-- Login de administrador -->
+        <!-- Login de administrador (Google + lista blanca "admins" en Firestore) -->
         <section id="admin-login-section" class="admin-form">
             <h2>🔑 Acceso de administrador</h2>
-            <label for="admin-pin">PIN de administrador</label>
-            <input type="password" id="admin-pin" placeholder="Ingresa PIN maestro" autocomplete="off">
-            <button id="btn-admin-login" type="button" class="main-btn" disabled>Acceder</button>
+            <p class="activation-note" style="margin-bottom:16px;">Inicia sesión con la cuenta de Google registrada como administrador.</p>
+            <button id="admin-google-login-btn" type="button" class="main-btn google-btn">
+                🚀 Iniciar sesión con Google
+            </button>
             <div id="admin-login-error" class="token-error" role="alert"></div>
         </section>
 
         <!-- Panel de administración -->
         <section id="admin-panel" style="display:none; margin-top:20px;">
-            <h2>👥 Usuarios autorizados</h2>
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+                <h2>👥 Usuarios autorizados</h2>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span id="admin-email-label" style="font-size:0.85rem; color:var(--texto-secundario);"></span>
+                    <button id="btn-admin-logout" type="button" class="secondary-btn" style="width:auto; margin-top:0;">Cerrar sesión</button>
+                </div>
+            </div>
 
             <!-- Agregar usuario -->
             <div class="admin-form">
@@ -49,13 +55,12 @@
 
             <button id="btn-refresh-users" type="button" class="secondary-btn">Actualizar lista</button>
 
-            <!-- Cambiar PIN -->
-            <div class="admin-form" style="margin-top:20px;">
-                <h2>🔐 Cambiar PIN de administrador</h2>
-                <label for="new-pin">Nuevo PIN</label>
-                <input type="password" id="new-pin" placeholder="Nuevo PIN" autocomplete="off">
-                <button id="btn-change-pin" type="button" class="main-btn">Actualizar PIN</button>
-            </div>
+            <p class="activation-note" style="margin-top:24px;">
+                Para agregar o quitar administradores, edita la colección <strong>admins</strong> en la consola de
+                Firestore (documento = correo en minúsculas, campo <strong>activo: true/false</strong>).
+                Esta pantalla ya no gestiona un PIN: el acceso depende de esa colección más las Reglas de
+                Seguridad de Firestore.
+            </p>
         </section>
 
         <footer class="app-footer">
@@ -66,6 +71,7 @@
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 
     <!-- Configuración Firebase -->
     <script src="firebase-config.js"></script>
