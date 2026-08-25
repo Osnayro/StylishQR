@@ -1,84 +1,85 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>StylishQR — Administración</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>StylishQR — Administración</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="app-container">
-        <!-- Header -->
-        <header class="app-header">
-            <img src="logo.PNG" alt="StylishQR Admin" class="header-logo">
-            <div class="header-info">
-                <h1>StylishQR Admin</h1>
-                <p>Gestión de usuarios autorizados</p>
-            </div>
-            <a href="index.html" class="header-logout" style="text-decoration:none;" aria-label="Volver a la aplicación">← Volver</a>
-        </header>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <img src="logo.jpg" alt="StylishQR Admin" class="header-logo">
+            <div class="header-info">
+                <h1>StylishQR Admin</h1>
+                <p>Gestión de usuarios autorizados</p>
+            </div>
+            <a href="index.html" class="header-logout" style="text-decoration:none;" aria-label="Volver a la aplicación">← Volver</a>
+        </header>
 
-        <!-- Login de administrador (Google + lista blanca "admins" en Firestore) -->
-        <section id="admin-login-section" class="admin-form">
-            <h2>🔑 Acceso de administrador</h2>
-            <p class="activation-note" style="margin-bottom:16px;">Inicia sesión con la cuenta de Google registrada como administrador.</p>
-            <button id="admin-google-login-btn" type="button" class="main-btn google-btn">
-                🚀 Iniciar sesión con Google
-            </button>
-            <div id="admin-login-error" class="token-error" role="alert"></div>
-        </section>
+        <!-- Login de administrador (Google + lista blanca "admins" en Firestore) -->
+        <section id="admin-login-section" class="admin-form">
+            <h2>🔑 Acceso de administrador</h2>
+            <p class="activation-note" style="margin-bottom:16px;">Inicia sesión con la cuenta de Google registrada como administrador.</p>
+            <button id="admin-google-login-btn" type="button" class="main-btn google-btn">
+                🚀 Iniciar sesión con Google
+            </button>
+            <div id="admin-login-error" class="token-error" role="alert"></div>
+        </section>
 
-        <!-- Panel de administración -->
-        <section id="admin-panel" style="display:none; margin-top:20px;">
-            <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
-                <h2>👥 Usuarios autorizados</h2>
-                <div style="display:flex; align-items:center; gap:10px;">
-                    <span id="admin-email-label" style="font-size:0.85rem; color:var(--texto-secundario);"></span>
-                    <button id="btn-admin-logout" type="button" class="secondary-btn" style="width:auto; margin-top:0;">Cerrar sesión</button>
-                </div>
-            </div>
+        <!-- Panel de administración -->
+        <section id="admin-panel" style="display:none; margin-top:20px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+                <h2>👥 Usuarios autorizados</h2>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span id="admin-email-label" style="font-size:0.85rem; color:var(--texto-secundario);"></span>
+                    <button id="btn-admin-logout" type="button" class="secondary-btn" style="width:auto; margin-top:0;">Cerrar sesión</button>
+                </div>
+            </div>
 
-            <!-- Agregar usuario -->
-            <div class="admin-form">
-                <label for="user-email">Correo del usuario</label>
-                <input type="email" id="user-email" placeholder="usuario@gmail.com" autocomplete="off">
-                <button id="btn-add-user" type="button" class="main-btn">Agregar usuario</button>
-            </div>
+            <!-- Agregar usuario -->
+            <div class="admin-form">
+                <label for="user-email">Correo del usuario</label>
+                <input type="email" id="user-email" placeholder="usuario@gmail.com" autocomplete="off">
+                <button id="btn-add-user" type="button" class="main-btn">Agregar usuario</button>
+            </div>
 
-            <div id="admin-user-error" class="token-error" role="alert"></div>
+            <div id="admin-user-error" class="token-error" role="alert"></div>
 
-            <!-- Lista de usuarios -->
-            <div id="users-list" class="admin-users-list">
-                <!-- Los usuarios se cargarán desde Firestore -->
-            </div>
+            <!-- Lista de usuarios -->
+            <div id="users-list" class="admin-users-list">
+                <!-- Los usuarios se cargarán desde Firestore -->
+            </div>
 
-            <button id="btn-refresh-users" type="button" class="secondary-btn">Actualizar lista</button>
+            <button id="btn-refresh-users" type="button" class="secondary-btn">Actualizar lista</button>
 
-            <p class="activation-note" style="margin-top:24px;">
-                Para agregar o quitar administradores, edita la colección <strong>admins</strong> en la consola de
-                Firestore (documento = correo en minúsculas, campo <strong>activo: true/false</strong>).
-                Esta pantalla ya no gestiona un PIN: el acceso depende de esa colección más las Reglas de
-                Seguridad de Firestore.
-            </p>
-        </section>
+            <p class="activation-note" style="margin-top:24px;">
+                Para agregar o quitar administradores, edita la colección <strong>admins</strong> en la consola de
+                Firestore (documento = correo en minúsculas, campo <strong>activo: true/false</strong>).
+                Esta pantalla ya no gestiona un PIN: el acceso depende de esa colección más las Reglas de
+                Seguridad de Firestore.
+            </p>
+        </section>
 
-        <footer class="app-footer">
-            <p>StylishQR — Desarrollado por Romeroweb</p>
-        </footer>
-    </div>
+        <footer class="app-footer">
+            <p>StylishQR — Desarrollado por Romeroweb</p>
+        </footer>
+    </div>
 
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 
-    <!-- Configuración Firebase -->
-    <script src="firebase-config.js"></script>
+    <!-- Configuración Firebase -->
+    <script src="firebase-config.js"></script>
 
-    <!-- Lógica de administración -->
-    <script src="admin.js"></script>
+    <!-- Lógica de administración -->
+    <script src="admin.js"></script>
 </body>
 </html>
+
