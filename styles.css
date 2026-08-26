@@ -1,3 +1,4 @@
+
 /* ============================================================
    STYLISHQR — ESTILOS FUTURISTAS Y MODERNOS (GLASS & NEON HUD)
    ============================================================ */
@@ -129,8 +130,6 @@ body {
 .header-logout:hover {
   background: rgba(255, 0, 122, 0.2);
   border-color: var(--magenta-neon);
-  /* Bug corregido: "rgba(ff, 0, 122, 0.3)" no es válido (ff no es un número).
-     Era 255. */
   box-shadow: 0 0 12px rgba(255, 0, 122, 0.3);
 }
 
@@ -342,9 +341,6 @@ body {
   gap: 16px;
 }
 
-/* Los formularios de cada pestaña (app.js) generan
-   <div class="form-group"><label>...</label><input ...></div>.
-   Esta clase faltaba en el CSS original. */
 .form-group {
   width: 100%;
   display: flex;
@@ -411,9 +407,14 @@ input[type="range"] {
   cursor: pointer;
 }
 
+/* Estilo adicional para input de archivo */
 input[type="file"] {
   color: var(--texto-secundario);
   font-size: 0.85rem;
+  background: transparent;
+  border: none;
+  padding: 8px 0;
+  cursor: pointer;
 }
 
 /* --- CONTENEDOR DE VISTA PREVIA QR --- */
@@ -439,8 +440,6 @@ input[type="file"] {
 }
 
 /* --- PANEL DE ADMINISTRACIÓN --- */
-/* Contenedor que faltaba: sin esto, el panel queda "flotando" sin tarjeta
-   sobre el fondo oscuro (admin.html usa id="admin-panel"). */
 #admin-panel,
 #admin-section {
   background: var(--bg-card);
@@ -482,8 +481,6 @@ input[type="file"] {
   font-size: 0.9rem;
 }
 
-/* admin.js genera <ul class="admin-user-list"><li>...</li></ul>, no
-   .user-item — se estiliza el <li> real para que coincida con el JS. */
 .admin-user-list {
   list-style: none;
   display: flex;
@@ -534,8 +531,6 @@ input[type="file"] {
   color: var(--magenta-neon);
 }
 
-/* Compatibilidad: mismo componente visual para "user-item" si se usa en
-   otra vista. */
 .user-item {
   display: flex;
   align-items: center;
@@ -555,10 +550,6 @@ input[type="file"] {
   font-size: 0.85rem;
   margin-top: 12px;
   min-height: 20px;
-  /* Antes tenía "display: none" fijo, así que el mensaje de error nunca
-     aparecía aunque el JS le pusiera texto (mostrarErrorAuth/mostrarErrorLogin
-     solo cambian textContent, nunca display). Ahora se oculta solo cuando
-     está vacío. */
   display: block;
 }
 
