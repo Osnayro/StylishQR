@@ -1,8 +1,7 @@
-
 /**
  * StylishQR — Generador de códigos QR con estilo
  * Autenticación con Google + lista blanca de usuarios autorizados
- * Incluye estándar EMV QRCPS para Pago Móvil Venezuela
+ * Incluye estándar EMV QRCPS / QRS7B para Pago Móvil Venezuela
  */
 
 let usuarioActual = null;
@@ -10,6 +9,35 @@ let qrCode = null;
 let logoDataUrl = null;
 
 const elementos = {};
+
+// Lista actualizada de bancos de Venezuela con código Sudeban
+const BANCOS_VENEZUELA = [
+    { codigo: '0102', nombre: 'Banco de Venezuela (BDV)' },
+    { codigo: '0104', nombre: 'Venezolano de Crédito' },
+    { codigo: '0105', nombre: 'Banco Mercantil' },
+    { codigo: '0108', nombre: 'BBVA Provincial' },
+    { codigo: '0114', nombre: 'Bancaribe' },
+    { codigo: '0115', nombre: 'Banco Exterior' },
+    { codigo: '0128', nombre: 'Banco Caroní' },
+    { codigo: '0134', nombre: 'Banesco' },
+    { codigo: '0137', nombre: 'Sofitasa' },
+    { codigo: '0138', nombre: 'Banco Plaza' },
+    { codigo: '0146', nombre: 'Bangente' },
+    { codigo: '0151', nombre: 'BFC Banco Fondo Común' },
+    { codigo: '0156', nombre: '100% Banco' },
+    { codigo: '0157', nombre: 'DelSur Banco Universal' },
+    { codigo: '0163', nombre: 'Banco del Tesoro' },
+    { codigo: '0166', nombre: 'Banco Agrícola de Venezuela' },
+    { codigo: '0168', nombre: 'Bancrecer' },
+    { codigo: '0169', nombre: 'Mi Banco / R4' },
+    { codigo: '0171', nombre: 'Banco Activo' },
+    { codigo: '0172', nombre: 'Bancamiga' },
+    { codigo: '0174', nombre: 'Banplus' },
+    { codigo: '0175', nombre: 'Banco Digital de los Trabajadores (BDT)' },
+    { codigo: '0177', nombre: 'BANFANB' },
+    { codigo: '0178', nombre: 'N58 Banco Digital' },
+    { codigo: '0191', nombre: 'BNC Banco Nacional de Crédito' }
+];
 
 document.addEventListener('DOMContentLoaded', () => {
     referenciarElementos();
@@ -45,8 +73,6 @@ function mostrarAuth(mostrar) {
         elementos.mainApp.style.display = 'none';
     } else {
         elementos.authScreen.style.display = 'none';
-        // 'flex' (no 'block'): el tema glass/neón usa display:flex en
-        // .app-container para anclar el footer abajo con margin-top:auto.
         elementos.mainApp.style.display = 'flex';
     }
 }
@@ -56,10 +82,6 @@ function mostrarErrorAuth(mensaje) {
 }
 
 function verificarSesion() {
-    // onAuthStateChanged siempre se dispara al cargar (con el usuario o con
-    // null), así que es la única fuente de verdad; evitamos duplicar lógica
-    // consultando window.auth.currentUser antes de que Firebase resuelva el
-    // estado (esa comprobación casi siempre sería prematura).
     mostrarAuth(true);
 
     window.auth?.onAuthStateChanged((user) => {
@@ -80,9 +102,6 @@ async function iniciarSesionGoogle() {
 
     const provider = new firebase.auth.GoogleAuthProvider();
     try {
-        // signInWithPopup falla con frecuencia en Safari iOS y en
-        // navegadores "in-app" (Instagram, Facebook, etc.). Si el popup no
-        // puede abrirse, recurrimos a signInWithRedirect como respaldo.
         const resultado = await window.auth.signInWithPopup(provider);
         await verificarAutorizacion(resultado.user);
     } catch (error) {
@@ -95,7 +114,7 @@ async function iniciarSesionGoogle() {
         if (erroresDePopup.includes(error.code)) {
             try {
                 await window.auth.signInWithRedirect(provider);
-                return; // La página se recargará tras el redirect.
+                return;
             } catch (errorRedirect) {
                 console.error('Error en autenticación con Google (redirect):', errorRedirect);
                 mostrarErrorAuth('No se pudo completar el inicio de sesión.');
@@ -148,7 +167,7 @@ function inicializarQR() {
         type: 'canvas',
         data: 'https://sabiondobuho.netlify.app/',
         margin: 10,
-        qrOptions: { errorCorrectionLevel: 'H' },
+        qrOptions: { errorCorrectionLevel: 'Q' }, // Nivel 'Q' (25%) recomendado para Pago Móvil
         dotsOptions: { type: 'square', color: elementos.qrColor.value },
         backgroundOptions: { color: elementos.bgColor.value },
         imageOptions: { crossOrigin: 'anonymous', margin: 8 }
@@ -179,8 +198,6 @@ function actualizarVistaPrevia(data) {
             imageSize: size
         };
     } else {
-        // La librería qr-code-styling no siempre limpia la imagen con una
-        // cadena vacía; 'undefined' elimina realmente el logo anterior.
         opciones.image = undefined;
     }
 
@@ -211,41 +228,44 @@ function calcularCRC16EMV(datos) {
 function generarEMVPagoMovil(f) {
     const nombre = (f.nombre || 'Comercio').trim();
     const tipoDoc = f.tipoDoc || 'V';
-    // Solo dígitos: evita romper el TLV si el usuario escribe espacios,
-    // guiones o puntos en la cédula/RIF o el teléfono.
     const numeroDoc = (f.documento || '').replace(/\D/g, '');
     const telefono = (f.telefono || '').replace(/\D/g, '');
+    const banco = f.banco || ''; // Código Sudeban de 4 dígitos
     const monto = f.monto || '';
     const ciudad = (f.ciudad || 'Caracas').trim();
     const concepto = (f.concepto || '').trim();
     const guid = f.guid || 've.pagomovil.generico';
     const metodo = f.metodo || '12';
 
-    // Documento y teléfono son obligatorios para un QR de pago móvil válido.
-    if (!numeroDoc || !telefono) {
+    // Documento, teléfono y banco son obligatorios para pago móvil
+    if (!numeroDoc || !telefono || !banco) {
         return '';
     }
 
     const documentoId = `${tipoDoc}${numeroDoc}`;
 
+    // Estructura de Merchant Account Information (Tag 26 - EMV)
     let merchantInfo = '';
     merchantInfo += construirTLV('00', guid);
     merchantInfo += construirTLV('01', documentoId);
     merchantInfo += construirTLV('02', telefono);
+    merchantInfo += construirTLV('03', banco); // Tag 03: Código Sudeban de 4 dígitos
 
     let payload = '';
-    payload += construirTLV('00', '01');
-    payload += construirTLV('01', metodo);
+    payload += construirTLV('00', '01'); // Versión
+    payload += construirTLV('01', metodo); // 11 Estático, 12 Dinámico
     payload += construirTLV('26', merchantInfo);
-    payload += construirTLV('52', '0000');
-    payload += construirTLV('53', '924');
+    payload += construirTLV('52', '0000'); // Merchant Category Code
+    payload += construirTLV('53', '924');  // Moneda VES (Bolívares)
+    
     if (monto) {
         const montoNum = parseFloat(monto);
         if (!Number.isNaN(montoNum) && montoNum > 0) {
             payload += construirTLV('54', montoNum.toFixed(2));
         }
     }
-    payload += construirTLV('58', 'VE');
+    
+    payload += construirTLV('58', 'VE'); // Código de país
     payload += construirTLV('59', nombre);
     payload += construirTLV('60', ciudad);
 
@@ -261,18 +281,13 @@ function generarEMVPagoMovil(f) {
     return payload;
 }
 
-// Escapa los caracteres reservados del formato WIFI: (RFC del QR de Wi-Fi):
-// \  ;  ,  :  deben precederse de una barra invertida.
 function escaparValorWifi(valor) {
     return String(valor).replace(/([\\;,:])/g, '\\$1');
 }
 
-// Convierte el valor de un <input type="datetime-local"> (p. ej.
-// "2026-08-24T10:00") al formato DTSTART de iCalendar ("20260824T100000").
 function formatearFechaICS(fechaLocal) {
     if (!fechaLocal) return '';
     const limpio = fechaLocal.replace(/[-:]/g, '');
-    // "20260824T1000" -> añade segundos si faltan.
     return limpio.length === 13 ? `${limpio}00` : limpio;
 }
 
@@ -338,6 +353,10 @@ function renderizarFormulario(tipo) {
             html = `<div class="form-group"><label>URL</label><input type="url" data-campo="url" placeholder="https://ejemplo.com"></div>`;
             break;
         case 'pagomovil':
+            const opcionesBancos = BANCOS_VENEZUELA
+                .map(b => `<option value="${b.codigo}">${b.codigo} - ${b.nombre}</option>`)
+                .join('');
+
             html = `
                 <div class="form-group"><label>Tipo de documento</label>
                     <select data-campo="tipoDoc">
@@ -351,14 +370,11 @@ function renderizarFormulario(tipo) {
                 <div class="form-group"><label>Teléfono</label><input type="tel" data-campo="telefono" placeholder="04121234567"></div>
                 <div class="form-group"><label>Banco</label>
                     <select data-campo="banco">
-                        <option value="">Seleccione</option>
-                        <option>BDV</option>
-                        <option>Banesco</option>
-                        <option>Mercantil</option>
-                        <option>BNC</option>
-                        <option>Otro</option>
+                        <option value="">Seleccione un banco</option>
+                        ${opcionesBancos}
                     </select>
                 </div>
+                <div class="form-group"><label>Nombre del Beneficiario / Comercio</label><input type="text" data-campo="nombre" placeholder="Nombre o Razón Social"></div>
                 <div class="form-group"><label>Monto (opcional)</label><input type="number" step="0.01" min="0" data-campo="monto" placeholder="0.00"></div>
                 <div class="form-group"><label>Concepto (opcional)</label><input type="text" data-campo="concepto" placeholder="Pago de..."></div>
                 <div class="form-group"><label>Ciudad</label><input type="text" data-campo="ciudad" placeholder="Caracas"></div>
