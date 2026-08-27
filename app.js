@@ -65,6 +65,16 @@ function referenciarElementos() {
     elementos.btnDownload = document.getElementById('btn-download');
     elementos.btnShare = document.getElementById('btn-share');
     elementos.btnLogout = document.getElementById('btn-logout');
+
+    // Elemento para alertas en la interfaz
+    let feedback = document.getElementById('qr-feedback');
+    if (!feedback) {
+        feedback = document.createElement('div');
+        feedback.id = 'qr-feedback';
+        feedback.style.cssText = 'color: #ff4d4d; font-size: 0.85rem; margin-top: 8px; text-align: center; font-weight: 500;';
+        elementos.qrPreview.parentNode.appendChild(feedback);
+    }
+    elementos.qrFeedback = feedback;
 }
 
 function mostrarAuth(mostrar) {
@@ -167,7 +177,7 @@ function inicializarQR() {
         type: 'canvas',
         data: 'https://sabiondobuho.netlify.app/',
         margin: 10,
-        qrOptions: { errorCorrectionLevel: 'Q' }, // Nivel 'Q' (25%) recomendado para Pago Móvil
+        qrOptions: { errorCorrectionLevel: 'Q' }, // Nivel 'Q' (25%) para resistir marcas/logos
         dotsOptions: { type: 'square', color: elementos.qrColor.value },
         backgroundOptions: { color: elementos.bgColor.value },
         imageOptions: { crossOrigin: 'anonymous', margin: 8 }
@@ -179,7 +189,7 @@ function actualizarVistaPrevia(data) {
     if (!qrCode) return;
 
     const opciones = {
-        data: data || 'https://sabiondobuho.netlify.app/',
+        data: data || ' ',
         dotsOptions: {
             type: elementos.qrShape.value,
             color: elementos.qrColor.value
@@ -190,11 +200,12 @@ function actualizarVistaPrevia(data) {
     };
 
     if (logoDataUrl) {
-        const size = parseInt(elementos.logoSize.value, 10) / 100;
+        // Mantiene el logo en una proporción segura (máx 20% de superficie)
+        const size = Math.min(parseInt(elementos.logoSize.value, 10) / 100, 0.20);
         opciones.image = logoDataUrl;
         opciones.imageOptions = {
             crossOrigin: 'anonymous',
-            margin: 8,
+            margin: 6,
             imageSize: size
         };
     } else {
@@ -230,42 +241,53 @@ function generarEMVPagoMovil(f) {
     const tipoDoc = f.tipoDoc || 'V';
     const numeroDoc = (f.documento || '').replace(/\D/g, '');
     const telefono = (f.telefono || '').replace(/\D/g, '');
-    const banco = f.banco || ''; // Código Sudeban de 4 dígitos
-    const monto = f.monto || '';
+    const banco = f.banco || '';
+    
+    // Normalización de monto (soporte para coma como separador decimal)
+    const montoLimpio = (f.monto || '').replace(',', '.');
     const ciudad = (f.ciudad || 'Caracas').trim();
-    const concepto = (f.concepto || '').trim();
+    
+    // Control de longitud en concepto (máx 25 caracteres para no sobrecargar el código)
+    const concepto = (f.concepto || '').trim().substring(0, 25);
     const guid = f.guid || 've.pagomovil.generico';
     const metodo = f.metodo || '12';
 
-    // Documento, teléfono y banco son obligatorios para pago móvil
-    if (!numeroDoc || !telefono || !banco) {
+    // Validación de campos obligatorios con retroalimentación en UI
+    const faltantes = [];
+    if (!numeroDoc) faltantes.push('Cédula/RIF');
+    if (!telefono) faltantes.push('Teléfono');
+    if (!banco) faltantes.push('Banco');
+
+    if (faltantes.length > 0) {
+        elementos.qrFeedback.textContent = `Falta ingresar: ${faltantes.join(', ')}`;
         return '';
     }
 
+    elementos.qrFeedback.textContent = ''; // Limpiar errores si todo está completo
+
     const documentoId = `${tipoDoc}${numeroDoc}`;
 
-    // Estructura de Merchant Account Information (Tag 26 - EMV)
     let merchantInfo = '';
     merchantInfo += construirTLV('00', guid);
     merchantInfo += construirTLV('01', documentoId);
     merchantInfo += construirTLV('02', telefono);
-    merchantInfo += construirTLV('03', banco); // Tag 03: Código Sudeban de 4 dígitos
+    merchantInfo += construirTLV('03', banco);
 
     let payload = '';
-    payload += construirTLV('00', '01'); // Versión
-    payload += construirTLV('01', metodo); // 11 Estático, 12 Dinámico
+    payload += construirTLV('00', '01');
+    payload += construirTLV('01', metodo);
     payload += construirTLV('26', merchantInfo);
-    payload += construirTLV('52', '0000'); // Merchant Category Code
-    payload += construirTLV('53', '924');  // Moneda VES (Bolívares)
+    payload += construirTLV('52', '0000');
+    payload += construirTLV('53', '924');
     
-    if (monto) {
-        const montoNum = parseFloat(monto);
+    if (montoLimpio) {
+        const montoNum = parseFloat(montoLimpio);
         if (!Number.isNaN(montoNum) && montoNum > 0) {
             payload += construirTLV('54', montoNum.toFixed(2));
         }
     }
     
-    payload += construirTLV('58', 'VE'); // Código de país
+    payload += construirTLV('58', 'VE');
     payload += construirTLV('59', nombre);
     payload += construirTLV('60', ciudad);
 
@@ -343,6 +365,7 @@ function generarDataQR(tipo) {
 }
 
 function renderizarFormulario(tipo) {
+    if (elementos.qrFeedback) elementos.qrFeedback.textContent = '';
     let html = '';
 
     switch (tipo) {
@@ -366,25 +389,18 @@ function renderizarFormulario(tipo) {
                         <option value="E">Extranjero (E)</option>
                     </select>
                 </div>
-                <div class="form-group"><label>Número de documento (Cédula/RIF)</label><input type="text" inputmode="numeric" data-campo="documento" placeholder="12345678"></div>
-                <div class="form-group"><label>Teléfono</label><input type="tel" data-campo="telefono" placeholder="04121234567"></div>
-                <div class="form-group"><label>Banco</label>
+                <div class="form-group"><label>Número de documento (Cédula/RIF) *</label><input type="text" inputmode="numeric" data-campo="documento" placeholder="12345678"></div>
+                <div class="form-group"><label>Teléfono *</label><input type="tel" data-campo="telefono" placeholder="04121234567"></div>
+                <div class="form-group"><label>Banco *</label>
                     <select data-campo="banco">
                         <option value="">Seleccione un banco</option>
                         ${opcionesBancos}
                     </select>
                 </div>
                 <div class="form-group"><label>Nombre del Beneficiario / Comercio</label><input type="text" data-campo="nombre" placeholder="Nombre o Razón Social"></div>
-                <div class="form-group"><label>Monto (opcional)</label><input type="number" step="0.01" min="0" data-campo="monto" placeholder="0.00"></div>
-                <div class="form-group"><label>Concepto (opcional)</label><input type="text" data-campo="concepto" placeholder="Pago de..."></div>
+                <div class="form-group"><label>Monto (opcional)</label><input type="text" inputmode="decimal" data-campo="monto" placeholder="0.00"></div>
+                <div class="form-group"><label>Concepto (máx. 25 caract.)</label><input type="text" maxlength="25" data-campo="concepto" placeholder="Pago de..."></div>
                 <div class="form-group"><label>Ciudad</label><input type="text" data-campo="ciudad" placeholder="Caracas"></div>
-                <div class="form-group"><label>GUID del proveedor</label><input type="text" data-campo="guid" placeholder="ve.pagomovil.generico"></div>
-                <div class="form-group"><label>Método de iniciación</label>
-                    <select data-campo="metodo">
-                        <option value="12">Dinámico</option>
-                        <option value="11">Estático</option>
-                    </select>
-                </div>
             `;
             break;
         case 'wifi':
@@ -492,7 +508,7 @@ function configurarEventos() {
         const tipo = document.querySelector('.tab-btn.active')?.dataset.tab || 'text';
         const data = generarDataQR(tipo);
         if (!data) {
-            alert('Ingresa los datos para generar el QR.');
+            alert('Ingresa los datos obligatorios antes de descargar el QR.');
             return;
         }
         qrCode.download({ name: 'stylishqr', extension: 'png' });
@@ -502,7 +518,7 @@ function configurarEventos() {
         const tipo = document.querySelector('.tab-btn.active')?.dataset.tab || 'text';
         const data = generarDataQR(tipo);
         if (!data) {
-            alert('Ingresa los datos para generar el QR.');
+            alert('Ingresa los datos obligatorios antes de compartir el QR.');
             return;
         }
 
