@@ -1,3 +1,4 @@
+
 /**
  * StylishQR — Generador de códigos QR con estilo
  * Autenticación con Google + lista blanca de usuarios autorizados
@@ -243,42 +244,40 @@ function generarEMVPagoMovil(f) {
     const telefono = (f.telefono || '').replace(/\D/g, '');
     const banco = f.banco || '';
     
-    // Normalización de monto (soporte para coma como separador decimal)
     const montoLimpio = (f.monto || '').replace(',', '.');
+    // Ciudad opcional con valor por defecto 'Caracas' para cumplir EMVCo
     const ciudad = (f.ciudad || 'Caracas').trim();
-    
-    // Control de longitud en concepto (máx 25 caracteres para no sobrecargar el código)
     const concepto = (f.concepto || '').trim().substring(0, 25);
-    const guid = f.guid || 've.pagomovil.generico';
-    const metodo = f.metodo || '12';
-
-    // Validación de campos obligatorios con retroalimentación en UI
+    
+    // Validación estricta
     const faltantes = [];
-    if (!numeroDoc) faltantes.push('Cédula/RIF');
-    if (!telefono) faltantes.push('Teléfono');
-    if (!banco) faltantes.push('Banco');
-
+    if (!/^\d{6,9}$/.test(numeroDoc)) faltantes.push('Cédula/RIF (solo números, 6-9 dígitos)');
+    if (!/^0\d{10}$/.test(telefono)) faltantes.push('Teléfono (debe comenzar con 0 y tener 11 dígitos)');
+    if (!/^\d{4}$/.test(banco)) faltantes.push('Código de banco (4 dígitos)');
+    
     if (faltantes.length > 0) {
-        elementos.qrFeedback.textContent = `Falta ingresar: ${faltantes.join(', ')}`;
+        elementos.qrFeedback.textContent = `Datos inválidos: ${faltantes.join(', ')}`;
         return '';
     }
-
-    elementos.qrFeedback.textContent = ''; // Limpiar errores si todo está completo
+    elementos.qrFeedback.textContent = '';
 
     const documentoId = `${tipoDoc}${numeroDoc}`;
+    const guid = 've.pagomovil';  // Fijo según estándar BCV
 
+    // Construir Merchant Account Information (campo 26)
     let merchantInfo = '';
     merchantInfo += construirTLV('00', guid);
     merchantInfo += construirTLV('01', documentoId);
     merchantInfo += construirTLV('02', telefono);
     merchantInfo += construirTLV('03', banco);
 
+    // Construir payload principal
     let payload = '';
-    payload += construirTLV('00', '01');
-    payload += construirTLV('01', metodo);
-    payload += construirTLV('26', merchantInfo);
-    payload += construirTLV('52', '0000');
-    payload += construirTLV('53', '924');
+    payload += construirTLV('00', '01');          // Payload Format Indicator
+    payload += construirTLV('01', '11');          // Point of Initiation Method (estático)
+    payload += construirTLV('26', merchantInfo);  // Merchant Account Information
+    payload += construirTLV('52', '0000');        // MCC
+    payload += construirTLV('53', '924');         // Código de moneda (VES)
     
     if (montoLimpio) {
         const montoNum = parseFloat(montoLimpio);
@@ -287,9 +286,9 @@ function generarEMVPagoMovil(f) {
         }
     }
     
-    payload += construirTLV('58', 'VE');
-    payload += construirTLV('59', nombre);
-    payload += construirTLV('60', ciudad);
+    payload += construirTLV('58', 'VE');          // País
+    payload += construirTLV('59', nombre);        // Nombre beneficiario
+    payload += construirTLV('60', ciudad);        // Ciudad (con valor por defecto)
 
     if (concepto) {
         let additionalData = '';
@@ -297,7 +296,8 @@ function generarEMVPagoMovil(f) {
         payload += construirTLV('62', additionalData);
     }
 
-    const crc = calcularCRC16EMV(payload + construirTLV('63', ''));
+    // Calcular CRC correctamente
+    const crc = calcularCRC16EMV(payload + '6304');
     payload += construirTLV('63', crc);
 
     return payload;
@@ -400,7 +400,7 @@ function renderizarFormulario(tipo) {
                 <div class="form-group"><label>Nombre del Beneficiario / Comercio</label><input type="text" data-campo="nombre" placeholder="Nombre o Razón Social"></div>
                 <div class="form-group"><label>Monto (opcional)</label><input type="text" inputmode="decimal" data-campo="monto" placeholder="0.00"></div>
                 <div class="form-group"><label>Concepto (máx. 25 caract.)</label><input type="text" maxlength="25" data-campo="concepto" placeholder="Pago de..."></div>
-                <div class="form-group"><label>Ciudad</label><input type="text" data-campo="ciudad" placeholder="Caracas"></div>
+                <div class="form-group"><label>Ciudad (opcional, se usará Caracas si se deja vacío)</label><input type="text" data-campo="ciudad" placeholder="Caracas"></div>
             `;
             break;
         case 'wifi':
