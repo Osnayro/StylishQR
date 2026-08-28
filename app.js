@@ -3,7 +3,7 @@
  * StylishQR — Generador de códigos QR con estilo
  * Autenticación con Google + lista blanca de usuarios autorizados
  * Incluye estándar EMV QRCPS / QRS7B para Pago Móvil Venezuela
- * Mejoras: manejo de redirect, listeners únicos, accesibilidad, descarga iOS
+ * Versión de producción: correcciones BCV, descarga iOS, listeners únicos
  */
 
 let usuarioActual = null;
@@ -73,7 +73,7 @@ function referenciarElementos() {
     if (!feedback) {
         feedback = document.createElement('div');
         feedback.id = 'qr-feedback';
-        feedback.setAttribute('aria-live', 'polite'); // Accesibilidad
+        feedback.setAttribute('aria-live', 'polite');
         feedback.style.cssText = 'color: #ff4d4d; font-size: 0.85rem; margin-top: 8px; text-align: center; font-weight: 500;';
         elementos.qrPreview.parentNode.appendChild(feedback);
     }
@@ -135,7 +135,7 @@ async function iniciarSesionGoogle() {
             'auth/popup-closed-by-user',
             'auth/cancelled-popup-request',
             'auth/operation-not-supported-in-this-environment',
-            'auth/network-request-failed' // Añadido
+            'auth/network-request-failed'
         ];
         if (erroresDePopup.includes(error.code)) {
             try {
@@ -267,6 +267,7 @@ function generarEMVPagoMovil(f) {
     const ciudad = (f.ciudad || 'Caracas').trim();
     const concepto = (f.concepto || '').trim().substring(0, 25);
     
+    // Validación estricta
     const faltantes = [];
     if (!/^\d{6,9}$/.test(numeroDoc)) faltantes.push('Cédula/RIF (solo números, 6-9 dígitos)');
     if (!/^0\d{10}$/.test(telefono)) faltantes.push('Teléfono (debe comenzar con 0 y tener 11 dígitos)');
@@ -281,18 +282,20 @@ function generarEMVPagoMovil(f) {
     const documentoId = `${tipoDoc}${numeroDoc}`;
     const guid = 've.pagomovil';
 
+    // Construir Merchant Account Information (campo 26) con el orden correcto
     let merchantInfo = '';
-    merchantInfo += construirTLV('00', guid);
-    merchantInfo += construirTLV('01', documentoId);
-    merchantInfo += construirTLV('02', telefono);
-    merchantInfo += construirTLV('03', banco);
+    merchantInfo += construirTLV('00', guid);       // GUID
+    merchantInfo += construirTLV('01', banco);      // Código del banco
+    merchantInfo += construirTLV('02', telefono);   // Teléfono
+    merchantInfo += construirTLV('03', documentoId); // Documento
 
+    // Construir payload principal
     let payload = '';
-    payload += construirTLV('00', '01');
-    payload += construirTLV('01', '11');
+    payload += construirTLV('00', '01');           // Payload Format Indicator
+    payload += construirTLV('01', '12');           // Point of Initiation Method (dinámico)
     payload += construirTLV('26', merchantInfo);
-    payload += construirTLV('52', '0000');
-    payload += construirTLV('53', '924');
+    payload += construirTLV('52', '0000');         // MCC
+    payload += construirTLV('53', '928');          // Código de moneda (VES)
     
     if (montoLimpio) {
         const montoNum = parseFloat(montoLimpio);
@@ -311,6 +314,7 @@ function generarEMVPagoMovil(f) {
         payload += construirTLV('62', additionalData);
     }
 
+    // Calcular CRC correctamente
     const crc = calcularCRC16EMV(payload + '6304');
     payload += construirTLV('63', crc);
 
@@ -527,7 +531,6 @@ function configurarEventos() {
             alert('Ingresa los datos obligatorios antes de descargar el QR.');
             return;
         }
-        // Obtener el canvas y generar un enlace de descarga
         const canvas = qrCode._canvas;
         if (!canvas) {
             alert('No se pudo generar el QR.');
@@ -540,7 +543,6 @@ function configurarEventos() {
         enlace.click();
         document.body.removeChild(enlace);
 
-        // Si es iOS, ofrecer alternativa
         if (/iPad|iPhone|iPod/.test(navigator.userAgent) && !navigator.share) {
             alert('En iOS, si el archivo no se guardó automáticamente, mantén presionada la imagen y selecciona "Guardar imagen". También puedes usar el botón Compartir.');
         }
@@ -565,7 +567,6 @@ function configurarEventos() {
                 const file = new File([blob], `stylishqr-${tipo}.png`, { type: 'image/png' });
                 await navigator.share({ title: 'StylishQR', files: [file] });
             } else {
-                // Fallback para navegadores sin Web Share API
                 const url = URL.createObjectURL(blob);
                 window.open(url, '_blank');
                 setTimeout(() => URL.revokeObjectURL(url), 10000);
