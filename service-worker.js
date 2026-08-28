@@ -1,11 +1,11 @@
 
 /**
- * StylishQR — Service Worker v2
+ * StylishQR — Service Worker v3
  * Soporte offline para archivos estáticos (App Shell).
  * No cachea respuestas de Firebase Firestore.
  */
 
-const CACHE_NAME = 'stylishqr-v2';
+const CACHE_NAME = 'stylishqr-v3';
 
 const STATIC_ASSETS = [
     '/',
@@ -14,7 +14,7 @@ const STATIC_ASSETS = [
     '/app.js',
     '/firebase-config.js',
     '/manifest.json',
-    '/logo.PNG',
+    '/logo.jpg',
     '/admin.html',
     '/admin.js'
 ];
